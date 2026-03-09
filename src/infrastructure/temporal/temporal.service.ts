@@ -1,11 +1,11 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, OnModuleDestroy } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   Client,
   Connection,
   WorkflowHandle,
   WorkflowOptions,
-} from '@temporalio/client';
+} from "@temporalio/client";
 
 export interface StartWorkflowOptions extends WorkflowOptions {
   args?: unknown[];
@@ -19,8 +19,11 @@ export class TemporalService implements OnModuleDestroy {
   constructor(private readonly config: ConfigService) {}
 
   async onModuleInit(): Promise<void> {
-    const address = this.config.get<string>('TEMPORAL_ADDRESS', 'temporal:7233');
-    const namespace = this.config.get<string>('TEMPORAL_NAMESPACE', 'default');
+    const address = this.config.get<string>(
+      "TEMPORAL_ADDRESS",
+      "152.67.7.3:7233",
+    );
+    const namespace = this.config.get<string>("TEMPORAL_NAMESPACE", "default");
 
     this.connection = await Connection.connect({
       address,
@@ -46,7 +49,7 @@ export class TemporalService implements OnModuleDestroy {
     workflowType: string,
     options: StartWorkflowOptions,
   ): Promise<WorkflowHandle> {
-    if (!this.client) throw new Error('Temporal client not connected');
+    if (!this.client) throw new Error("Temporal client not connected");
 
     const { args = [], ...workflowOptions } = options;
     return this.client.workflow.start(workflowType, {
@@ -59,7 +62,7 @@ export class TemporalService implements OnModuleDestroy {
    * Get the underlying Temporal client for advanced usage.
    */
   getClient(): Client {
-    if (!this.client) throw new Error('Temporal client not connected');
+    if (!this.client) throw new Error("Temporal client not connected");
     return this.client;
   }
 }

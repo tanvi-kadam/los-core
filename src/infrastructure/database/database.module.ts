@@ -10,7 +10,7 @@ import { DatabaseService } from "./database.service";
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: "postgres",
-        host: config.get<string>("DB_HOST", "postgres"),
+        host: config.get<string>("DB_HOST", "152.67.7.3"),
         port: config.get<number>("DB_PORT", 5432),
         username: config.get<string>("DB_USER", "los_admin"),
         password: config.get<string>(

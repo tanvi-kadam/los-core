@@ -12,7 +12,7 @@ import { RedisService } from "./redis.service";
       provide: REDIS_CLIENT,
       inject: [ConfigService],
       useFactory: (config: ConfigService): Redis => {
-        const host = config.get<string>("REDIS_HOST", "redis");
+        const host = config.get<string>("REDIS_HOST", "152.67.7.3");
         const port = config.get<number>("REDIS_PORT", 6379);
         const password = config.get<string>(
           "REDIS_PASSWORD",
