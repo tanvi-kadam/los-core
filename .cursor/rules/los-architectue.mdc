@@ -1,0 +1,216 @@
+---
+alwaysApply: true
+---
+
+You are building a production-grade backend for a fintech MSME Loan Origination System (LOS).
+
+Follow these architecture rules strictly.
+
+---
+
+## SYSTEM ARCHITECTURE
+
+Framework: NestJS
+Architecture: Modular Monolith
+
+Project structure:
+
+src/
+modules/
+infrastructure/
+common/
+
+---
+
+## DATABASE
+
+Database: PostgreSQL
+ORM: TypeORM
+
+Use a single PostgreSQL connection with multiple schemas.
+
+Schemas:
+
+auth_schema
+authority_schema
+application_schema
+workflow_schema
+approval_schema
+audit_schema
+config_schema
+idempotency_schema
+policy_schema
+integration_schema
+aml_schema
+
+Example entity definition:
+
+@Entity({ schema: 'application_schema', name: 'applications' })
+
+---
+
+## DOMAIN MODULES
+
+Each business domain must be implemented as a module.
+
+Modules:
+
+auth
+authority
+application
+workflow
+approval
+audit
+config
+idempotency
+policy
+integration
+aml
+document
+
+Each module must contain:
+
+controller
+service
+repository
+entity
+dto
+
+Controllers must be thin.
+Business logic must exist in services.
+
+---
+
+## INFRASTRUCTURE MODULES
+
+Infrastructure modules must exist under:
+
+src/infrastructure
+
+Modules:
+
+database
+redis
+kafka
+temporal
+minio
+logger
+telemetry
+
+Domain modules must never directly access external systems.
+
+---
+
+## LOGGING
+
+Logging must use Pino.
+
+Required log fields:
+
+timestamp
+level
+service
+correlation_id
+message
+
+Logs must be JSON compatible for Loki ingestion.
+
+---
+
+## TRACING
+
+Tracing must use OpenTelemetry.
+
+Traces must export to:
+
+otel-collector:4317
+
+Trace:
+
+HTTP requests
+database queries
+Redis operations
+Kafka publishing
+
+---
+
+## HEADERS
+
+All APIs must support:
+
+X-Correlation-ID
+X-Idempotency-Key
+
+---
+
+## STANDARD API RESPONSE
+
+Success:
+
+{
+"status": "SUCCESS",
+"data": {},
+"correlation_id": ""
+}
+
+Error:
+
+{
+"status": "ERROR",
+"message": "",
+"correlation_id": ""
+}
+
+---
+
+## SWAGGER DOCUMENTATION
+
+Swagger must be implemented using:
+
+@nestjs/swagger
+
+Swagger endpoint:
+
+/api/docs
+
+Each API must include:
+
+@ApiTags
+@ApiOperation
+@ApiResponse
+
+---
+
+## DTO VALIDATION
+
+DTOs must use:
+
+class-validator
+class-transformer
+
+---
+
+## API INVENTORY
+
+After modules are generated produce an API inventory.
+
+Inventory must include:
+
+method
+endpoint
+module
+description
+database table
+
+---
+
+## API VERIFICATION
+
+Verify that:
+
+Swagger documentation exists
+DTO validation exists
+Example payload exists
+API mapped to correct database schema
+Correlation ID supported
+Idempotency supported
