@@ -37,6 +37,18 @@ let ApplicationRepository = class ApplicationRepository {
             qb.andWhere('a.id != :excludeId', { excludeId });
         return qb.getOne();
     }
+    async findDuplicatesForDetection(pan, entityIdentifier, excludeId) {
+        const qb = this.repo
+            .createQueryBuilder('a')
+            .where('a.pan = :pan OR a.entity_identifier = :entityIdentifier', {
+            pan,
+            entityIdentifier,
+        });
+        if (excludeId) {
+            qb.andWhere('a.id != :excludeId', { excludeId });
+        }
+        return qb.getMany();
+    }
 };
 exports.ApplicationRepository = ApplicationRepository;
 exports.ApplicationRepository = ApplicationRepository = __decorate([

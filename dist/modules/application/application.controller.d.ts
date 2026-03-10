@@ -37,4 +37,13 @@ export declare class ApplicationController {
         application_id: string;
         current_state: string;
     }>;
+    getConsentTypes(): Promise<{
+        id: string;
+        consent_code: string;
+        description: string;
+    }[]>;
+    duplicates(id: string): Promise<{
+        duplicate_flag: boolean;
+        matched_application_ids: string[];
+    }>;
 }

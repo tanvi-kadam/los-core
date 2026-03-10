@@ -24,6 +24,17 @@ let ConsentTypeRepository = class ConsentTypeRepository {
     async findById(id) {
         return this.repo.findOne({ where: { id } });
     }
+    async findActiveByCode(consentCode) {
+        return this.repo.findOne({
+            where: { consentCode, isActive: true },
+        });
+    }
+    async findAllActive() {
+        return this.repo.find({
+            where: { isActive: true },
+            order: { consentCode: 'ASC' },
+        });
+    }
 };
 exports.ConsentTypeRepository = ConsentTypeRepository;
 exports.ConsentTypeRepository = ConsentTypeRepository = __decorate([

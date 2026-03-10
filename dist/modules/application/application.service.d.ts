@@ -1,12 +1,14 @@
-import { ApplicationRepository } from './repositories/application.repository';
-import { ConsentRecordRepository } from './repositories/consent-record.repository';
-import { ConsentTypeRepository } from './repositories/consent-type.repository';
-import { DuplicateCheckRepository } from './repositories/duplicate-check.repository';
-import { AuditService } from '../audit/audit.service';
-import { KafkaProducerService } from '../../infrastructure/kafka';
-import { CreateApplicationDto } from './dto/create-application.dto';
-import { UpdateApplicationDto } from './dto/update-application.dto';
-import { ConsentDto } from './dto/consent.dto';
+import { ApplicationRepository } from "./repositories/application.repository";
+import { ConsentRecordRepository } from "./repositories/consent-record.repository";
+import { ConsentTypeRepository } from "./repositories/consent-type.repository";
+import { DuplicateCheckRepository } from "./repositories/duplicate-check.repository";
+import { WorkflowService } from "../workflow/workflow.service";
+import { AuthorityService } from "../authority/authority.service";
+import { AuditService } from "../audit/audit.service";
+import { KafkaProducerService } from "../../infrastructure/kafka";
+import { CreateApplicationDto } from "./dto/create-application.dto";
+import { UpdateApplicationDto } from "./dto/update-application.dto";
+import { ConsentDto } from "./dto/consent.dto";
 export declare class ApplicationService {
     private readonly applicationRepository;
     private readonly consentRecordRepository;
@@ -14,8 +16,21 @@ export declare class ApplicationService {
     private readonly duplicateCheckRepository;
     private readonly auditService;
     private readonly kafkaProducer;
-    constructor(applicationRepository: ApplicationRepository, consentRecordRepository: ConsentRecordRepository, consentTypeRepository: ConsentTypeRepository, duplicateCheckRepository: DuplicateCheckRepository, auditService: AuditService, kafkaProducer: KafkaProducerService);
-    create(dto: CreateApplicationDto, userId: string, correlationId?: string): Promise<{
+    private readonly workflowService;
+    private readonly authorityService;
+    constructor(applicationRepository: ApplicationRepository, consentRecordRepository: ConsentRecordRepository, consentTypeRepository: ConsentTypeRepository, duplicateCheckRepository: DuplicateCheckRepository, auditService: AuditService, kafkaProducer: KafkaProducerService, workflowService: WorkflowService, authorityService: AuthorityService);
+    private consentTypesCache;
+    private static readonly CONSENT_TYPES_CACHE_TTL_MS;
+    private recordConsent;
+    getConsentTypes(): Promise<{
+        id: string;
+        consent_code: string;
+        description: string;
+    }[]>;
+    create(dto: CreateApplicationDto, userId: string, correlationId?: string, context?: {
+        ip?: string;
+        userAgent?: string;
+    }): Promise<{
         application_id: string;
         current_state: string;
     }>;
@@ -29,5 +44,9 @@ export declare class ApplicationService {
     submit(applicationId: string, userId: string, correlationId?: string): Promise<{
         application_id: string;
         current_state: string;
+    }>;
+    findDuplicates(applicationId: string): Promise<{
+        duplicate_flag: boolean;
+        matched_application_ids: string[];
     }>;
 }

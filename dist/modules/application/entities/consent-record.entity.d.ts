@@ -4,7 +4,10 @@ export declare class ConsentRecord {
     id: string;
     applicationId: string;
     consentTypeId: string;
-    consentedAt: Date;
+    consentTextVersion: number | null;
+    ipAddress: string | null;
+    userAgent: string | null;
+    correlationId: string | null;
     createdAt: Date;
     application: Application;
     consentType: ConsentType;

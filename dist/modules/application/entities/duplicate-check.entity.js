@@ -24,19 +24,26 @@ __decorate([
     __metadata("design:type", String)
 ], DuplicateCheck.prototype, "applicationId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'check_type', type: 'varchar', length: 50 }),
-    __metadata("design:type", String)
-], DuplicateCheck.prototype, "checkType", void 0);
+    (0, typeorm_1.Column)({ name: 'matched_application_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", Object)
+], DuplicateCheck.prototype, "matchedApplicationId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'duplicate_flag', type: 'boolean', default: false }),
-    __metadata("design:type", Boolean)
-], DuplicateCheck.prototype, "duplicateFlag", void 0);
+    (0, typeorm_1.Column)({
+        name: 'match_reason',
+        type: 'varchar',
+        length: 100,
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], DuplicateCheck.prototype, "matchReason", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], DuplicateCheck.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => application_entity_1.Application, (a) => a.duplicateChecks, { onDelete: 'CASCADE' }),
+    (0, typeorm_1.ManyToOne)(() => application_entity_1.Application, (a) => a.duplicateChecks, {
+        onDelete: 'CASCADE',
+    }),
     (0, typeorm_1.JoinColumn)({ name: 'application_id' }),
     __metadata("design:type", application_entity_1.Application)
 ], DuplicateCheck.prototype, "application", void 0);

@@ -25,6 +25,9 @@ let DuplicateCheckRepository = class DuplicateCheckRepository {
         const created = this.repo.create(entity);
         return this.repo.save(created);
     }
+    async findByApplicationId(applicationId) {
+        return this.repo.find({ where: { applicationId } });
+    }
 };
 exports.DuplicateCheckRepository = DuplicateCheckRepository;
 exports.DuplicateCheckRepository = DuplicateCheckRepository = __decorate([

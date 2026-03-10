@@ -29,9 +29,21 @@ __decorate([
     __metadata("design:type", String)
 ], ConsentRecord.prototype, "consentTypeId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'consented_at', type: 'timestamp' }),
-    __metadata("design:type", Date)
-], ConsentRecord.prototype, "consentedAt", void 0);
+    (0, typeorm_1.Column)({ name: 'consent_text_version', type: 'integer', nullable: true }),
+    __metadata("design:type", Object)
+], ConsentRecord.prototype, "consentTextVersion", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'ip_address', type: 'varchar', length: 100, nullable: true }),
+    __metadata("design:type", Object)
+], ConsentRecord.prototype, "ipAddress", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'user_agent', type: 'text', nullable: true }),
+    __metadata("design:type", Object)
+], ConsentRecord.prototype, "userAgent", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'correlation_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", Object)
+], ConsentRecord.prototype, "correlationId", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Put,
+  Get,
   Body,
   Param,
   UseGuards,
@@ -35,6 +36,10 @@ export class ApplicationController {
       dto,
       req.user.user_id,
       req.correlationId,
+      {
+        ip: req.ip,
+        userAgent: (req.headers['user-agent'] as string) || undefined,
+      },
     );
   }
 
@@ -59,7 +64,12 @@ export class ApplicationController {
     @Body() dto: ConsentDto,
     @Req() req: Request & { user: { user_id: string } },
   ) {
-    return this.applicationService.addConsent(id, dto, req.user.user_id, req.correlationId);
+    return this.applicationService.addConsent(
+      id,
+      dto,
+      req.user.user_id,
+      req.correlationId,
+    );
   }
 
   @Post(':id/submit')
@@ -72,5 +82,58 @@ export class ApplicationController {
     @Req() req: Request & { user: { user_id: string } },
   ) {
     return this.applicationService.submit(id, req.user.user_id, req.correlationId);
+  }
+
+  @Get('consent-types')
+  @ApiOperation({ summary: 'List available consent types' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of active consent types',
+    schema: {
+      example: {
+        status: 'SUCCESS',
+        data: [
+          {
+            id: 'uuid',
+            consent_code: 'BUREAU_PULL',
+            description:
+              'Consent for credit bureau pull (CRIF, Experian, CIBIL)',
+          },
+          {
+            id: 'uuid',
+            consent_code: 'ACCOUNT_AGGREGATOR',
+            description:
+              'Consent for fetching banking data via Account Aggregator ecosystem',
+          },
+        ],
+        correlation_id: 'uuid',
+      },
+    },
+  })
+  async getConsentTypes() {
+    return this.applicationService.getConsentTypes();
+  }
+
+  @Get(':id/duplicates')
+  @ApiOperation({ summary: 'Run duplicate detection for application' })
+  @ApiResponse({
+    status: 200,
+    description: 'Duplicate detection executed',
+    schema: {
+      example: {
+        status: 'SUCCESS',
+        data: {
+          duplicate_flag: true,
+          matched_application_ids: ['uuid-1', 'uuid-2'],
+        },
+        correlation_id: '',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async duplicates(
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.applicationService.findDuplicates(id);
   }
 }

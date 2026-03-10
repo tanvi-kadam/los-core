@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Application } from './entities/application.entity';
 import { ConsentType } from './entities/consent-type.entity';
@@ -12,6 +12,8 @@ import { ApplicationService } from './application.service';
 import { ApplicationController } from './application.controller';
 import { AuditModule } from '../audit/audit.module';
 import { KafkaModule } from '../../infrastructure/kafka';
+import { WorkflowModule } from '../workflow/workflow.module';
+import { AuthorityModule } from '../authority/authority.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { KafkaModule } from '../../infrastructure/kafka';
     ]),
     AuditModule,
     KafkaModule,
+    forwardRef(() => WorkflowModule),
+    AuthorityModule,
   ],
   controllers: [ApplicationController],
   providers: [

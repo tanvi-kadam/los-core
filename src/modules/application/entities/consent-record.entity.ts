@@ -20,8 +20,17 @@ export class ConsentRecord {
   @Column({ name: 'consent_type_id', type: 'uuid' })
   consentTypeId: string;
 
-  @Column({ name: 'consented_at', type: 'timestamp' })
-  consentedAt: Date;
+  @Column({ name: 'consent_text_version', type: 'integer', nullable: true })
+  consentTextVersion: number | null;
+
+  @Column({ name: 'ip_address', type: 'varchar', length: 100, nullable: true })
+  ipAddress: string | null;
+
+  @Column({ name: 'user_agent', type: 'text', nullable: true })
+  userAgent: string | null;
+
+  @Column({ name: 'correlation_id', type: 'uuid', nullable: true })
+  correlationId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

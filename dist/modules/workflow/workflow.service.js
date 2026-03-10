@@ -32,6 +32,9 @@ let WorkflowService = class WorkflowService {
         if (fromState === toState) {
             throw new common_1.BadRequestException('Target state is same as current state');
         }
+        if (!(fromState === 'DRAFT' && toState === 'SUBMITTED')) {
+            throw new common_1.ConflictException('Invalid state transition for application');
+        }
         await this.applicationRepository.save({
             ...app,
             currentState: toState,

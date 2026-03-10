@@ -21,6 +21,8 @@ const application_service_1 = require("./application.service");
 const application_controller_1 = require("./application.controller");
 const audit_module_1 = require("../audit/audit.module");
 const kafka_1 = require("../../infrastructure/kafka");
+const workflow_module_1 = require("../workflow/workflow.module");
+const authority_module_1 = require("../authority/authority.module");
 let ApplicationModule = class ApplicationModule {
 };
 exports.ApplicationModule = ApplicationModule;
@@ -35,6 +37,8 @@ exports.ApplicationModule = ApplicationModule = __decorate([
             ]),
             audit_module_1.AuditModule,
             kafka_1.KafkaModule,
+            (0, common_1.forwardRef)(() => workflow_module_1.WorkflowModule),
+            authority_module_1.AuthorityModule,
         ],
         controllers: [application_controller_1.ApplicationController],
         providers: [

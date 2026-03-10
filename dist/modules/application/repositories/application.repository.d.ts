@@ -6,4 +6,5 @@ export declare class ApplicationRepository {
     save(entity: Partial<Application>): Promise<Application>;
     findById(id: string): Promise<Application | null>;
     findDuplicateByPanAndProduct(pan: string, productCode: string, excludeId?: string): Promise<Application | null>;
+    findDuplicatesForDetection(pan: string, entityIdentifier: string, excludeId?: string): Promise<Application[]>;
 }

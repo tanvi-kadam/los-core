@@ -27,4 +27,21 @@ export class ApplicationRepository {
     if (excludeId) qb.andWhere('a.id != :excludeId', { excludeId });
     return qb.getOne();
   }
+
+  async findDuplicatesForDetection(
+    pan: string,
+    entityIdentifier: string,
+    excludeId?: string,
+  ): Promise<Application[]> {
+    const qb = this.repo
+      .createQueryBuilder('a')
+      .where('a.pan = :pan OR a.entity_identifier = :entityIdentifier', {
+        pan,
+        entityIdentifier,
+      });
+    if (excludeId) {
+      qb.andWhere('a.id != :excludeId', { excludeId });
+    }
+    return qb.getMany();
+  }
 }

@@ -23,7 +23,7 @@ exports.WorkflowModule = WorkflowModule = __decorate([
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forFeature([application_state_transition_entity_1.ApplicationStateTransition]),
-            application_module_1.ApplicationModule,
+            (0, common_1.forwardRef)(() => application_module_1.ApplicationModule),
             audit_module_1.AuditModule,
             kafka_1.KafkaModule,
         ],

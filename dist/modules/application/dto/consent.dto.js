@@ -16,8 +16,20 @@ class ConsentDto {
 }
 exports.ConsentDto = ConsentDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Consent type ID' }),
-    (0, class_validator_1.IsUUID)(),
+    (0, swagger_1.ApiProperty)({
+        description: 'Consent code as configured in config_schema.consent_types',
+        example: 'BUREAU_PULL',
+    }),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], ConsentDto.prototype, "consentTypeId", void 0);
+], ConsentDto.prototype, "consentCode", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Version of the consent text presented to the user',
+        example: 1,
+    }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], ConsentDto.prototype, "consentTextVersion", void 0);
 //# sourceMappingURL=consent.dto.js.map

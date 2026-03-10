@@ -25,7 +25,10 @@ let ApplicationController = class ApplicationController {
         this.applicationService = applicationService;
     }
     async create(dto, req) {
-        return this.applicationService.create(dto, req.user.user_id, req.correlationId);
+        return this.applicationService.create(dto, req.user.user_id, req.correlationId, {
+            ip: req.ip,
+            userAgent: req.headers['user-agent'] || undefined,
+        });
     }
     async update(id, dto, req) {
         return this.applicationService.update(id, dto, req.user.user_id, req.correlationId);
@@ -35,6 +38,12 @@ let ApplicationController = class ApplicationController {
     }
     async submit(id, req) {
         return this.applicationService.submit(id, req.user.user_id, req.correlationId);
+    }
+    async getConsentTypes() {
+        return this.applicationService.getConsentTypes();
+    }
+    async duplicates(id) {
+        return this.applicationService.findDuplicates(id);
     }
 };
 exports.ApplicationController = ApplicationController;
@@ -85,6 +94,58 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "submit", null);
+__decorate([
+    (0, common_1.Get)('consent-types'),
+    (0, swagger_1.ApiOperation)({ summary: 'List available consent types' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'List of active consent types',
+        schema: {
+            example: {
+                status: 'SUCCESS',
+                data: [
+                    {
+                        id: 'uuid',
+                        consent_code: 'BUREAU_PULL',
+                        description: 'Consent for credit bureau pull (CRIF, Experian, CIBIL)',
+                    },
+                    {
+                        id: 'uuid',
+                        consent_code: 'ACCOUNT_AGGREGATOR',
+                        description: 'Consent for fetching banking data via Account Aggregator ecosystem',
+                    },
+                ],
+                correlation_id: 'uuid',
+            },
+        },
+    }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ApplicationController.prototype, "getConsentTypes", null);
+__decorate([
+    (0, common_1.Get)(':id/duplicates'),
+    (0, swagger_1.ApiOperation)({ summary: 'Run duplicate detection for application' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Duplicate detection executed',
+        schema: {
+            example: {
+                status: 'SUCCESS',
+                data: {
+                    duplicate_flag: true,
+                    matched_application_ids: ['uuid-1', 'uuid-2'],
+                },
+                correlation_id: '',
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Application not found' }),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ApplicationController.prototype, "duplicates", null);
 exports.ApplicationController = ApplicationController = __decorate([
     (0, swagger_1.ApiTags)('application'),
     (0, common_1.Controller)('applications'),

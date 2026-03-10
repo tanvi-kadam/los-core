@@ -1,15 +1,18 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity({ schema: 'application_schema', name: 'consent_types' })
+@Entity({ schema: 'config_schema', name: 'consent_types' })
 export class ConsentType {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  code: string;
+  @Column({ name: 'consent_code', type: 'varchar', length: 50, unique: true })
+  consentCode: string;
 
-  @Column({ type: 'text', nullable: true })
-  description: string | null;
+  @Column({ type: 'text' })
+  description: string;
+
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

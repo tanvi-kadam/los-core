@@ -1,3 +1,4 @@
+import { ConsentDto } from './consent.dto';
 export declare class CreateApplicationDto {
     entityType: string;
     entityIdentifier: string;
@@ -6,4 +7,5 @@ export declare class CreateApplicationDto {
     loanAmount: number;
     loanTenureMonths: number;
     purpose?: string | null;
+    consents?: ConsentDto[];
 }

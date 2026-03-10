@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { WorkflowRepository } from './repositories/workflow.repository';
 import { ApplicationRepository } from '../application/repositories/application.repository';
 import { AuditService } from '../audit/audit.service';
@@ -30,6 +30,11 @@ export class WorkflowService {
     const toState = dto.target_state;
     if (fromState === toState) {
       throw new BadRequestException('Target state is same as current state');
+    }
+
+    // Sprint-1: only allow DRAFT -> SUBMITTED
+    if (!(fromState === 'DRAFT' && toState === 'SUBMITTED')) {
+      throw new ConflictException('Invalid state transition for application');
     }
 
     await this.applicationRepository.save({

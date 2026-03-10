@@ -19,18 +19,22 @@ __decorate([
     __metadata("design:type", String)
 ], ConsentType.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 100 }),
+    (0, typeorm_1.Column)({ name: 'consent_code', type: 'varchar', length: 50, unique: true }),
     __metadata("design:type", String)
-], ConsentType.prototype, "code", void 0);
+], ConsentType.prototype, "consentCode", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", Object)
+    (0, typeorm_1.Column)({ type: 'text' }),
+    __metadata("design:type", String)
 ], ConsentType.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'is_active', type: 'boolean', default: true }),
+    __metadata("design:type", Boolean)
+], ConsentType.prototype, "isActive", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], ConsentType.prototype, "createdAt", void 0);
 exports.ConsentType = ConsentType = __decorate([
-    (0, typeorm_1.Entity)({ schema: 'application_schema', name: 'consent_types' })
+    (0, typeorm_1.Entity)({ schema: 'config_schema', name: 'consent_types' })
 ], ConsentType);
 //# sourceMappingURL=consent-type.entity.js.map

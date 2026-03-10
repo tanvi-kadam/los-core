@@ -4,4 +4,6 @@ export declare class ConsentTypeRepository {
     private readonly repo;
     constructor(repo: Repository<ConsentType>);
     findById(id: string): Promise<ConsentType | null>;
+    findActiveByCode(consentCode: string): Promise<ConsentType | null>;
+    findAllActive(): Promise<ConsentType[]>;
 }

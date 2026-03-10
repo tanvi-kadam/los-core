@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ApplicationStateTransition } from './entities/application-state-transition.entity';
 import { WorkflowRepository } from './repositories/workflow.repository';
@@ -11,7 +11,7 @@ import { KafkaModule } from '../../infrastructure/kafka';
 @Module({
   imports: [
     TypeOrmModule.forFeature([ApplicationStateTransition]),
-    ApplicationModule,
+    forwardRef(() => ApplicationModule),
     AuditModule,
     KafkaModule,
   ],

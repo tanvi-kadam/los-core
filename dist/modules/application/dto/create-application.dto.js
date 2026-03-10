@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateApplicationDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
+const consent_dto_1 = require("./consent.dto");
 class CreateApplicationDto {
 }
 exports.CreateApplicationDto = CreateApplicationDto;
@@ -38,7 +40,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 5000000, description: 'Loan amount' }),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], CreateApplicationDto.prototype, "loanAmount", void 0);
 __decorate([
@@ -53,4 +55,14 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", Object)
 ], CreateApplicationDto.prototype, "purpose", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Initial consents captured at application creation',
+        type: () => [consent_dto_1.ConsentDto],
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => consent_dto_1.ConsentDto),
+    __metadata("design:type", Array)
+], CreateApplicationDto.prototype, "consents", void 0);
 //# sourceMappingURL=create-application.dto.js.map

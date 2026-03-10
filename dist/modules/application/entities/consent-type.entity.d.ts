@@ -1,6 +1,7 @@
 export declare class ConsentType {
     id: string;
-    code: string;
-    description: string | null;
+    consentCode: string;
+    description: string;
+    isActive: boolean;
     createdAt: Date;
 }

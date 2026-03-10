@@ -13,4 +13,17 @@ export class ConsentTypeRepository {
   async findById(id: string): Promise<ConsentType | null> {
     return this.repo.findOne({ where: { id } });
   }
+
+  async findActiveByCode(consentCode: string): Promise<ConsentType | null> {
+    return this.repo.findOne({
+      where: { consentCode, isActive: true },
+    });
+  }
+
+  async findAllActive(): Promise<ConsentType[]> {
+    return this.repo.find({
+      where: { isActive: true },
+      order: { consentCode: 'ASC' },
+    });
+  }
 }

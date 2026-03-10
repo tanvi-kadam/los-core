@@ -12,24 +12,24 @@ User login. Returns JWT access and refresh tokens.
 
 **Request**
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| X-Correlation-ID | No | Correlation ID (auto-generated if missing) |
-| Content-Type | Yes | application/json |
+| Header           | Required | Description                                |
+| ---------------- | -------- | ------------------------------------------ |
+| X-Correlation-ID | No       | Correlation ID (auto-generated if missing) |
+| Content-Type     | Yes      | application/json                           |
 
 **Body**
 
 ```json
 {
-  "email": "user@los.com",
-  "password": "password"
+  "email": "admin@test.com",
+  "password": "password123"
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| email | string | Yes | User email |
-| password | string | Yes | User password |
+| Field    | Type   | Required | Description   |
+| -------- | ------ | -------- | ------------- |
+| email    | string | Yes      | User email    |
+| password | string | Yes      | User password |
 
 **Response (200)**
 
@@ -65,10 +65,10 @@ Refresh access token using a valid refresh token.
 
 **Request**
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| X-Correlation-ID | No | Correlation ID |
-| Content-Type | Yes | application/json |
+| Header           | Required | Description      |
+| ---------------- | -------- | ---------------- |
+| X-Correlation-ID | No       | Correlation ID   |
+| Content-Type     | Yes      | application/json |
 
 **Body**
 
@@ -102,10 +102,10 @@ Returns the current authenticated user. Requires JWT.
 
 **Request**
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| Authorization | Yes | Bearer \<access_token\> |
-| X-Correlation-ID | No | Correlation ID |
+| Header           | Required | Description             |
+| ---------------- | -------- | ----------------------- |
+| Authorization    | Yes      | Bearer \<access_token\> |
+| X-Correlation-ID | No       | Correlation ID          |
 
 **Response (200)**
 

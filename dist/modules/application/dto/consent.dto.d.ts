@@ -1,3 +1,4 @@
 export declare class ConsentDto {
-    consentTypeId: string;
+    consentCode: string;
+    consentTextVersion: number;
 }

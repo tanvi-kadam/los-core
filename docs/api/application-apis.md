@@ -29,7 +29,17 @@ Create a new loan application (DRAFT). Supports idempotency via `X-Idempotency-K
   "product_code": "TERM_LOAN",
   "loan_amount": 5000000,
   "loan_tenure_months": 36,
-  "purpose": "Working capital"
+  "purpose": "Working capital",
+  "consents": [
+    {
+      "consent_code": "BUREAU_PULL",
+      "consent_text_version": 1
+    },
+    {
+      "consent_code": "ACCOUNT_AGGREGATOR",
+      "consent_text_version": 1
+    }
+  ]
 }
 ```
 
@@ -69,7 +79,8 @@ Record consent for an application.
 
 ```json
 {
-  "consentTypeId": "uuid"
+  "consent_code": "BUREAU_PULL",
+  "consent_text_version": 1
 }
 ```
 
@@ -98,3 +109,39 @@ Submit the application (requires CONSENTED). Moves state to SUBMITTED.
 
 **Database table:** `application_schema.applications`.  
 **Kafka:** `ApplicationSubmitted` on `los.application.events`.
+
+---
+
+## GET /applications/consent-types
+
+List all active consent types configured in `config_schema.consent_types`.
+
+**Headers**
+
+| Header           | Required | Description    |
+|------------------|----------|----------------|
+| Authorization    | Yes      | Bearer \<JWT\> |
+| X-Correlation-ID | No       | Correlation ID |
+
+**Response (200)**
+
+```json
+{
+  "status": "SUCCESS",
+  "data": [
+    {
+      "id": "uuid",
+      "consent_code": "BUREAU_PULL",
+      "description": "Consent for credit bureau pull (CRIF, Experian, CIBIL)"
+    },
+    {
+      "id": "uuid",
+      "consent_code": "ACCOUNT_AGGREGATOR",
+      "description": "Consent for fetching banking data via Account Aggregator ecosystem"
+    }
+  ],
+  "correlation_id": "uuid"
+}
+```
+
+**Database table:** `config_schema.consent_types`.

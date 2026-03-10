@@ -2,8 +2,8 @@ import { Application } from './application.entity';
 export declare class DuplicateCheck {
     id: string;
     applicationId: string;
-    checkType: string;
-    duplicateFlag: boolean;
+    matchedApplicationId: string | null;
+    matchReason: string | null;
     createdAt: Date;
     application: Application;
 }

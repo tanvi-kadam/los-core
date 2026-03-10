@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { ConsentDto } from './consent.dto';
 
 export class CreateApplicationDto {
   @ApiProperty({ example: 'PRIVATE_LIMITED', description: 'Entity type' })
@@ -20,7 +28,7 @@ export class CreateApplicationDto {
 
   @ApiProperty({ example: 5000000, description: 'Loan amount' })
   @IsNumber()
-  @Min(0)
+  @Min(1)
   loanAmount: number;
 
   @ApiProperty({ example: 36, description: 'Loan tenure in months' })
@@ -32,4 +40,13 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsString()
   purpose?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Initial consents captured at application creation',
+    type: () => [ConsentDto],
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ConsentDto)
+  consents?: ConsentDto[];
 }

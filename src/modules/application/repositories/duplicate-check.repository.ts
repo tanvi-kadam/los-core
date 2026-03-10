@@ -14,4 +14,8 @@ export class DuplicateCheckRepository {
     const created = this.repo.create(entity);
     return this.repo.save(created);
   }
+
+  async findByApplicationId(applicationId: string): Promise<DuplicateCheck[]> {
+    return this.repo.find({ where: { applicationId } });
+  }
 }
