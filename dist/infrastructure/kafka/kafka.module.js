@@ -24,9 +24,11 @@ exports.KafkaModule = KafkaModule = __decorate([
                 provide: kafka_constants_1.KAFKA_CLIENT,
                 inject: [config_1.ConfigService],
                 useFactory: (config) => {
-                    const brokers = config.get('KAFKA_BROKERS', 'kafka:9092').split(',');
+                    const brokers = config
+                        .get("KAFKA_BROKERS", "152.67.7.3:9092")
+                        .split(",");
                     return new kafkajs_1.Kafka({
-                        clientId: 'los-core',
+                        clientId: "los-core",
                         brokers: brokers.map((b) => b.trim()),
                     });
                 },

@@ -20,8 +20,8 @@ let TemporalService = class TemporalService {
         this.client = null;
     }
     async onModuleInit() {
-        const address = this.config.get('TEMPORAL_ADDRESS', 'temporal:7233');
-        const namespace = this.config.get('TEMPORAL_NAMESPACE', 'default');
+        const address = this.config.get("TEMPORAL_ADDRESS", "152.67.7.3:7233");
+        const namespace = this.config.get("TEMPORAL_NAMESPACE", "default");
         this.connection = await client_1.Connection.connect({
             address,
         });
@@ -39,7 +39,7 @@ let TemporalService = class TemporalService {
     }
     async startWorkflow(workflowType, options) {
         if (!this.client)
-            throw new Error('Temporal client not connected');
+            throw new Error("Temporal client not connected");
         const { args = [], ...workflowOptions } = options;
         return this.client.workflow.start(workflowType, {
             ...workflowOptions,
@@ -48,7 +48,7 @@ let TemporalService = class TemporalService {
     }
     getClient() {
         if (!this.client)
-            throw new Error('Temporal client not connected');
+            throw new Error("Temporal client not connected");
         return this.client;
     }
 };

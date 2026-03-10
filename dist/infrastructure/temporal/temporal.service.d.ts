@@ -1,6 +1,6 @@
-import { OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Client, WorkflowHandle, WorkflowOptions } from '@temporalio/client';
+import { OnModuleDestroy } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Client, WorkflowHandle, WorkflowOptions } from "@temporalio/client";
 export interface StartWorkflowOptions extends WorkflowOptions {
     args?: unknown[];
 }

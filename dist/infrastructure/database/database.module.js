@@ -22,7 +22,7 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                 inject: [config_1.ConfigService],
                 useFactory: (config) => ({
                     type: "postgres",
-                    host: config.get("DB_HOST", "postgres"),
+                    host: config.get("DB_HOST", "152.67.7.3"),
                     port: config.get("DB_PORT", 5432),
                     username: config.get("DB_USER", "los_admin"),
                     password: config.get("DB_PASSWORD", "vlcMTwKDEftqjRUSgNOuwrBoEpZdm2KuIjz35sNu"),
