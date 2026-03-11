@@ -198,6 +198,7 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
         if (app.currentState !== "DRAFT") {
             throw new common_1.BadRequestException("Application is not in DRAFT state");
         }
+        console.log("app.consentStatus", app);
         if (app.consentStatus !== "CONSENTED") {
             throw new common_1.BadRequestException("Consent is required before submit");
         }

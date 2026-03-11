@@ -291,6 +291,7 @@ export class ApplicationService {
     if (app.currentState !== "DRAFT") {
       throw new BadRequestException("Application is not in DRAFT state");
     }
+    console.log("app.consentStatus", app);
     if (app.consentStatus !== "CONSENTED") {
       throw new BadRequestException("Consent is required before submit");
     }
