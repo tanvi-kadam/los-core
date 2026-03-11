@@ -4,4 +4,5 @@ export declare class WorkflowRepository {
     private readonly repo;
     constructor(repo: Repository<ApplicationStateTransition>);
     save(entity: Partial<ApplicationStateTransition>): Promise<ApplicationStateTransition>;
+    findByApplicationId(applicationId: string): Promise<ApplicationStateTransition[]>;
 }

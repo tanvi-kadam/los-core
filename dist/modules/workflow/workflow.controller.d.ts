@@ -15,4 +15,5 @@ export declare class WorkflowController {
         from_state: string;
         to_state: string;
     }>;
+    listTransitions(id: string): Promise<import("./dto/application-transitions.dto").ApplicationStateTransitionDto[]>;
 }

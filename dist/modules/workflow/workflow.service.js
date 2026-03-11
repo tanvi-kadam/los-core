@@ -15,7 +15,6 @@ const workflow_repository_1 = require("./repositories/workflow.repository");
 const application_repository_1 = require("../application/repositories/application.repository");
 const audit_service_1 = require("../audit/audit.service");
 const kafka_1 = require("../../infrastructure/kafka");
-const kafka_topics_1 = require("../../common/constants/kafka-topics");
 let WorkflowService = class WorkflowService {
     constructor(workflowRepository, applicationRepository, auditService, kafkaProducer) {
         this.workflowRepository = workflowRepository;
@@ -26,14 +25,14 @@ let WorkflowService = class WorkflowService {
     async transition(applicationId, dto, userId, triggeredRole, authoritySnapshot, correlationId) {
         const app = await this.applicationRepository.findById(applicationId);
         if (!app)
-            throw new common_1.NotFoundException('Application not found');
+            throw new common_1.NotFoundException("Application not found");
         const fromState = app.currentState;
         const toState = dto.target_state;
         if (fromState === toState) {
-            throw new common_1.BadRequestException('Target state is same as current state');
+            throw new common_1.BadRequestException("Target state is same as current state");
         }
-        if (!(fromState === 'DRAFT' && toState === 'SUBMITTED')) {
-            throw new common_1.ConflictException('Invalid state transition for application');
+        if (!(fromState === "DRAFT" && toState === "SUBMITTED")) {
+            throw new common_1.ConflictException("Invalid state transition for application");
         }
         await this.applicationRepository.save({
             ...app,
@@ -53,25 +52,32 @@ let WorkflowService = class WorkflowService {
             actorId: userId,
             actorRole: triggeredRole,
             authoritySnapshot: authoritySnapshot ?? undefined,
-            actionType: 'STATE_CHANGE',
-            objectType: 'APPLICATION',
+            actionType: "STATE_CHANGE",
+            objectType: "APPLICATION",
             objectId: applicationId,
             beforeStateHash: fromState,
             afterStateHash: toState,
             correlationId: correlationId ?? null,
         });
-        await this.kafkaProducer.send(kafka_topics_1.KAFKA_TOPICS.WORKFLOW_EVENTS, {
-            event_type: 'ApplicationStateChanged',
-            correlation_id: correlationId ?? '',
-            payload: {
-                application_id: applicationId,
-                from_state: fromState,
-                to_state: toState,
-                triggered_by: userId,
-                triggered_role: triggeredRole,
-            },
-        });
-        return { application_id: applicationId, from_state: fromState, to_state: toState };
+        return {
+            application_id: applicationId,
+            from_state: fromState,
+            to_state: toState,
+        };
+    }
+    async getTransitionsForApplication(applicationId) {
+        const transitions = await this.workflowRepository.findByApplicationId(applicationId);
+        return transitions.map((t) => ({
+            id: t.id,
+            application_id: t.applicationId,
+            from_state: t.fromState,
+            to_state: t.toState,
+            triggered_by: t.triggeredBy,
+            triggered_role: t.triggeredRole,
+            authority_snapshot: t.authoritySnapshot,
+            correlation_id: t.correlationId,
+            occurred_at: t.occurredAt,
+        }));
     }
 };
 exports.WorkflowService = WorkflowService;

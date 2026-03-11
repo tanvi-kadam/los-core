@@ -14,4 +14,11 @@ export class WorkflowRepository {
     const created = this.repo.create(entity);
     return this.repo.save(created);
   }
+
+   async findByApplicationId(applicationId: string): Promise<ApplicationStateTransition[]> {
+    return this.repo.find({
+      where: { applicationId },
+      order: { occurredAt: 'ASC' },
+    });
+  }
 }

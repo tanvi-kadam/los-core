@@ -1,10 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { WorkflowRepository } from './repositories/workflow.repository';
-import { ApplicationRepository } from '../application/repositories/application.repository';
-import { AuditService } from '../audit/audit.service';
-import { KafkaProducerService } from '../../infrastructure/kafka';
-import { KAFKA_TOPICS } from '../../common/constants/kafka-topics';
-import { TransitionDto } from './dto/transition.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
+import { WorkflowRepository } from "./repositories/workflow.repository";
+import { ApplicationRepository } from "../application/repositories/application.repository";
+import { AuditService } from "../audit/audit.service";
+import { KafkaProducerService } from "../../infrastructure/kafka";
+import { KAFKA_TOPICS } from "../../common/constants/kafka-topics";
+import { TransitionDto } from "./dto/transition.dto";
+import { ApplicationStateTransitionDto } from "./dto/application-transitions.dto";
 
 @Injectable()
 export class WorkflowService {
@@ -24,17 +30,17 @@ export class WorkflowService {
     correlationId?: string,
   ): Promise<{ application_id: string; from_state: string; to_state: string }> {
     const app = await this.applicationRepository.findById(applicationId);
-    if (!app) throw new NotFoundException('Application not found');
+    if (!app) throw new NotFoundException("Application not found");
 
     const fromState = app.currentState;
     const toState = dto.target_state;
     if (fromState === toState) {
-      throw new BadRequestException('Target state is same as current state');
+      throw new BadRequestException("Target state is same as current state");
     }
 
     // Sprint-1: only allow DRAFT -> SUBMITTED
-    if (!(fromState === 'DRAFT' && toState === 'SUBMITTED')) {
-      throw new ConflictException('Invalid state transition for application');
+    if (!(fromState === "DRAFT" && toState === "SUBMITTED")) {
+      throw new ConflictException("Invalid state transition for application");
     }
 
     await this.applicationRepository.save({
@@ -57,26 +63,50 @@ export class WorkflowService {
       actorId: userId,
       actorRole: triggeredRole,
       authoritySnapshot: authoritySnapshot ?? undefined,
-      actionType: 'STATE_CHANGE',
-      objectType: 'APPLICATION',
+      actionType: "STATE_CHANGE",
+      objectType: "APPLICATION",
       objectId: applicationId,
       beforeStateHash: fromState,
       afterStateHash: toState,
       correlationId: correlationId ?? null,
     });
 
-    await this.kafkaProducer.send(KAFKA_TOPICS.WORKFLOW_EVENTS, {
-      event_type: 'ApplicationStateChanged',
-      correlation_id: correlationId ?? '',
-      payload: {
-        application_id: applicationId,
-        from_state: fromState,
-        to_state: toState,
-        triggered_by: userId,
-        triggered_role: triggeredRole,
-      },
-    });
+    // await this.kafkaProducer.send(KAFKA_TOPICS.WORKFLOW_EVENTS, {
+    //   event_type: 'ApplicationStateChanged',
+    //   correlation_id: correlationId ?? '',
+    //   payload: {
+    //     application_id: applicationId,
+    //     from_state: fromState,
+    //     to_state: toState,
+    //     triggered_by: userId,
+    //     triggered_role: triggeredRole,
+    //   },
+    // });
 
-    return { application_id: applicationId, from_state: fromState, to_state: toState };
+    return {
+      application_id: applicationId,
+      from_state: fromState,
+      to_state: toState,
+    };
+  }
+
+  async getTransitionsForApplication(
+    applicationId: string,
+  ): Promise<ApplicationStateTransitionDto[]> {
+    const transitions = await this.workflowRepository.findByApplicationId(
+      applicationId,
+    );
+
+    return transitions.map((t) => ({
+      id: t.id,
+      application_id: t.applicationId,
+      from_state: t.fromState,
+      to_state: t.toState,
+      triggered_by: t.triggeredBy,
+      triggered_role: t.triggeredRole,
+      authority_snapshot: t.authoritySnapshot,
+      correlation_id: t.correlationId,
+      occurred_at: t.occurredAt,
+    }));
   }
 }

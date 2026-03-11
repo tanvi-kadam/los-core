@@ -25,6 +25,12 @@ let WorkflowRepository = class WorkflowRepository {
         const created = this.repo.create(entity);
         return this.repo.save(created);
     }
+    async findByApplicationId(applicationId) {
+        return this.repo.find({
+            where: { applicationId },
+            order: { occurredAt: 'ASC' },
+        });
+    }
 };
 exports.WorkflowRepository = WorkflowRepository;
 exports.WorkflowRepository = WorkflowRepository = __decorate([

@@ -1,5 +1,5 @@
-import { Repository } from 'typeorm';
-import { AuthorityMatrix } from '../entities/authority-matrix.entity';
+import { Repository } from "typeorm";
+import { AuthorityMatrix } from "../entities/authority-matrix.entity";
 export declare class AuthorityRepository {
     private readonly repo;
     constructor(repo: Repository<AuthorityMatrix>);

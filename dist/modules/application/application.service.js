@@ -15,6 +15,7 @@ var ApplicationService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApplicationService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("typeorm");
 const application_repository_1 = require("./repositories/application.repository");
 const consent_record_repository_1 = require("./repositories/consent-record.repository");
 const consent_type_repository_1 = require("./repositories/consent-type.repository");
@@ -23,8 +24,10 @@ const workflow_service_1 = require("../workflow/workflow.service");
 const authority_service_1 = require("../authority/authority.service");
 const audit_service_1 = require("../audit/audit.service");
 const kafka_1 = require("../../infrastructure/kafka");
+const application_entity_1 = require("./entities/application.entity");
+const application_state_transition_entity_1 = require("../workflow/entities/application-state-transition.entity");
 let ApplicationService = ApplicationService_1 = class ApplicationService {
-    constructor(applicationRepository, consentRecordRepository, consentTypeRepository, duplicateCheckRepository, auditService, kafkaProducer, workflowService, authorityService) {
+    constructor(applicationRepository, consentRecordRepository, consentTypeRepository, duplicateCheckRepository, auditService, kafkaProducer, workflowService, authorityService, dataSource) {
         this.applicationRepository = applicationRepository;
         this.consentRecordRepository = consentRecordRepository;
         this.consentTypeRepository = consentTypeRepository;
@@ -33,6 +36,7 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
         this.kafkaProducer = kafkaProducer;
         this.workflowService = workflowService;
         this.authorityService = authorityService;
+        this.dataSource = dataSource;
         this.consentTypesCache = null;
     }
     async recordConsent(app, dto, userId, correlationId, context) {
@@ -80,9 +84,35 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
             id: ct.id,
             consent_code: ct.consentCode,
             description: ct.description,
+            version: ct.version,
         }));
         this.consentTypesCache = { items, loadedAt: now };
         return items;
+    }
+    async listApplications(query) {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? 20;
+        const { items, total } = await this.applicationRepository.findPaged({
+            state: query.state,
+            page,
+            limit,
+        });
+        const mapped = items.map((a) => ({
+            id: a.id,
+            entity_type: a.entityType,
+            entity_identifier: a.entityIdentifier,
+            pan: a.pan,
+            product_code: a.productCode,
+            loan_amount: a.loanAmount,
+            loan_tenure_months: a.loanTenureMonths,
+            purpose: a.purpose,
+            current_state: a.currentState,
+            consent_status: a.consentStatus,
+            duplicate_flag: a.duplicateFlag,
+            created_by: a.createdBy,
+            created_at: a.createdAt,
+        }));
+        return { items: mapped, page, limit, total };
     }
     async create(dto, userId, correlationId, context) {
         const duplicate = await this.applicationRepository.findDuplicateByPanAndProduct(dto.pan, dto.productCode);
@@ -96,7 +126,7 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
             loanTenureMonths: dto.loanTenureMonths,
             purpose: dto.purpose ?? null,
             currentState: "DRAFT",
-            consentStatus: "PENDING",
+            consentStatus: "GIVEN",
             duplicateFlag,
             createdBy: userId,
         });
@@ -161,7 +191,7 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
         await this.recordConsent(app, dto, userId, correlationId);
         return { status: "CONSENTED" };
     }
-    async submit(applicationId, userId, correlationId) {
+    async submit(applicationId, userId, roleId, correlationId) {
         const app = await this.applicationRepository.findById(applicationId);
         if (!app)
             throw new common_1.NotFoundException("Application not found");
@@ -172,14 +202,47 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
             throw new common_1.BadRequestException("Consent is required before submit");
         }
         const duplicateChecks = await this.duplicateCheckRepository.findByApplicationId(applicationId);
-        if (!duplicateChecks || duplicateChecks.length === 0) {
-            throw new common_1.ConflictException("Duplicate detection must be executed before submission");
+        if (duplicateChecks &&
+            duplicateChecks.length > 0 &&
+            duplicateChecks.some((dc) => dc.matchedApplicationId)) {
+            throw new common_1.ConflictException("Duplicate application detected. Submission is blocked.");
         }
-        await this.authorityService.checkAuthorityLimit("", Number(app.loanAmount), userId, undefined);
-        const transitionResult = await this.workflowService.transition(applicationId, { target_state: "SUBMITTED" }, userId, "", null, correlationId);
+        if (roleId) {
+            await this.authorityService.checkAuthorityLimit(roleId, Number(app.loanAmount), userId, undefined);
+        }
+        const fromState = app.currentState;
+        const toState = "SUBMITTED";
+        await this.dataSource.transaction(async (manager) => {
+            const appRepo = manager.getRepository(application_entity_1.Application);
+            const transitionRepo = manager.getRepository(application_state_transition_entity_1.ApplicationStateTransition);
+            await appRepo.save({
+                ...app,
+                currentState: toState,
+            });
+            await transitionRepo.save({
+                applicationId,
+                fromState,
+                toState,
+                triggeredBy: userId,
+                triggeredRole: roleId ?? "",
+                authoritySnapshot: null,
+                occurredAt: new Date(),
+                correlationId: correlationId ?? null,
+            });
+        });
+        await this.auditService.record({
+            actorId: userId,
+            actorRole: roleId ?? "",
+            actionType: "STATE_CHANGE",
+            objectType: "APPLICATION",
+            objectId: applicationId,
+            beforeStateHash: fromState,
+            afterStateHash: toState,
+            correlationId: correlationId ?? null,
+        });
         return {
-            application_id: transitionResult.application_id,
-            current_state: "SUBMITTED",
+            application_id: applicationId,
+            current_state: toState,
         };
     }
     async findDuplicates(applicationId) {
@@ -220,6 +283,7 @@ exports.ApplicationService = ApplicationService = ApplicationService_1 = __decor
         audit_service_1.AuditService,
         kafka_1.KafkaProducerService,
         workflow_service_1.WorkflowService,
-        authority_service_1.AuthorityService])
+        authority_service_1.AuthorityService,
+        typeorm_1.DataSource])
 ], ApplicationService);
 //# sourceMappingURL=application.service.js.map

@@ -1,8 +1,8 @@
-import { PinoLogger } from 'nestjs-pino';
-import { RedisService } from '../../infrastructure/redis';
-import { AuthorityRepository } from './repositories/authority.repository';
-import { CreateAuthorityDto } from './dto/create-authority.dto';
-import { UpdateAuthorityDto } from './dto/update-authority.dto';
+import { PinoLogger } from "nestjs-pino";
+import { RedisService } from "../../infrastructure/redis";
+import { AuthorityRepository } from "./repositories/authority.repository";
+import { CreateAuthorityDto } from "./dto/create-authority.dto";
+import { UpdateAuthorityDto } from "./dto/update-authority.dto";
 export interface AuthorityRuleDto {
     id: string;
     role_id: string;

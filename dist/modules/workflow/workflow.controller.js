@@ -28,6 +28,9 @@ let WorkflowController = class WorkflowController {
         const authoritySnapshot = req.authoritySnapshot;
         return this.workflowService.transition(id, dto, userId, triggeredRole, authoritySnapshot ?? null, req.correlationId);
     }
+    async listTransitions(id) {
+        return this.workflowService.getTransitionsForApplication(id);
+    }
 };
 exports.WorkflowController = WorkflowController;
 __decorate([
@@ -43,6 +46,37 @@ __decorate([
     __metadata("design:paramtypes", [String, transition_dto_1.TransitionDto, Object]),
     __metadata("design:returntype", Promise)
 ], WorkflowController.prototype, "transition", null);
+__decorate([
+    (0, common_1.Get)(':id/transitions'),
+    (0, swagger_1.ApiOperation)({ summary: 'List state transitions for an application' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Transition history for the application',
+        schema: {
+            example: {
+                status: 'SUCCESS',
+                data: [
+                    {
+                        id: 'uuid',
+                        application_id: 'uuid',
+                        from_state: 'DRAFT',
+                        to_state: 'SUBMITTED',
+                        triggered_by: 'user-uuid',
+                        triggered_role: 'ROLE_RM',
+                        authority_snapshot: { max_loan_amount: '10000000' },
+                        correlation_id: 'uuid',
+                        occurred_at: '2026-03-10T12:00:00Z',
+                    },
+                ],
+                correlation_id: 'uuid',
+            },
+        },
+    }),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], WorkflowController.prototype, "listTransitions", null);
 exports.WorkflowController = WorkflowController = __decorate([
     (0, swagger_1.ApiTags)('workflow'),
     (0, common_1.Controller)('applications'),

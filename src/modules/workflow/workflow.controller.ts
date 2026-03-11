@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards, ParseUUIDPipe, Req } from '@nestjs/common';
+import { Controller, Post, Body, Param, UseGuards, ParseUUIDPipe, Req, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { WorkflowService } from './workflow.service';
@@ -33,5 +33,36 @@ export class WorkflowController {
       authoritySnapshot ?? null,
       req.correlationId,
     );
+  }
+
+  @Get(':id/transitions')
+  @ApiOperation({ summary: 'List state transitions for an application' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transition history for the application',
+    schema: {
+      example: {
+        status: 'SUCCESS',
+        data: [
+          {
+            id: 'uuid',
+            application_id: 'uuid',
+            from_state: 'DRAFT',
+            to_state: 'SUBMITTED',
+            triggered_by: 'user-uuid',
+            triggered_role: 'ROLE_RM',
+            authority_snapshot: { max_loan_amount: '10000000' },
+            correlation_id: 'uuid',
+            occurred_at: '2026-03-10T12:00:00Z',
+          },
+        ],
+        correlation_id: 'uuid',
+      },
+    },
+  })
+  async listTransitions(
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.workflowService.getTransitionsForApplication(id);
   }
 }

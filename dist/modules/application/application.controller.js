@@ -19,15 +19,19 @@ const application_service_1 = require("./application.service");
 const create_application_dto_1 = require("./dto/create-application.dto");
 const update_application_dto_1 = require("./dto/update-application.dto");
 const consent_dto_1 = require("./dto/consent.dto");
+const list_applications_dto_1 = require("./dto/list-applications.dto");
 const jwt_guard_1 = require("../auth/jwt.guard");
 let ApplicationController = class ApplicationController {
     constructor(applicationService) {
         this.applicationService = applicationService;
     }
+    async list(query) {
+        return this.applicationService.listApplications(query);
+    }
     async create(dto, req) {
         return this.applicationService.create(dto, req.user.user_id, req.correlationId, {
             ip: req.ip,
-            userAgent: req.headers['user-agent'] || undefined,
+            userAgent: req.headers["user-agent"] || undefined,
         });
     }
     async update(id, dto, req) {
@@ -37,7 +41,7 @@ let ApplicationController = class ApplicationController {
         return this.applicationService.addConsent(id, dto, req.user.user_id, req.correlationId);
     }
     async submit(id, req) {
-        return this.applicationService.submit(id, req.user.user_id, req.correlationId);
+        return this.applicationService.submit(id, req.user.user_id, req.user.role_id, req.correlationId);
     }
     async getConsentTypes() {
         return this.applicationService.getConsentTypes();
@@ -48,10 +52,60 @@ let ApplicationController = class ApplicationController {
 };
 exports.ApplicationController = ApplicationController;
 __decorate([
+    (0, common_1.Get)(),
+    (0, swagger_1.ApiOperation)({ summary: "List applications (paginated)" }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: "Paginated list of applications",
+        schema: {
+            example: {
+                status: "SUCCESS",
+                data: {
+                    items: [
+                        {
+                            id: "uuid",
+                            entity_type: "PRIVATE_LIMITED",
+                            entity_identifier: "U12345MH2020PTC123456",
+                            pan: "ABCDE1234F",
+                            product_code: "TERM_LOAN",
+                            loan_amount: "5000000.00",
+                            loan_tenure_months: 36,
+                            purpose: "Working capital",
+                            current_state: "DRAFT",
+                            consent_status: "CONSENTED",
+                            duplicate_flag: false,
+                            created_by: "user-uuid",
+                            created_at: "2026-03-10T12:00:00Z",
+                        },
+                    ],
+                    page: 1,
+                    limit: 20,
+                    total: 1,
+                },
+                correlation_id: "uuid",
+            },
+        },
+    }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [list_applications_dto_1.ListApplicationsQueryDto]),
+    __metadata("design:returntype", Promise)
+], ApplicationController.prototype, "list", null);
+__decorate([
     (0, common_1.Post)(),
-    (0, swagger_1.ApiOperation)({ summary: 'Create application' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: 'Application created', schema: { example: { status: 'SUCCESS', data: { application_id: 'uuid', current_state: 'DRAFT' }, correlation_id: '' } } }),
-    (0, swagger_1.ApiResponse)({ status: 400, description: 'Validation error' }),
+    (0, swagger_1.ApiOperation)({ summary: "Create application" }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: "Application created",
+        schema: {
+            example: {
+                status: "SUCCESS",
+                data: { application_id: "uuid", current_state: "DRAFT" },
+                correlation_id: "",
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: "Validation error" }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -59,11 +113,11 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "create", null);
 __decorate([
-    (0, common_1.Put)(':id'),
-    (0, swagger_1.ApiOperation)({ summary: 'Update application (DRAFT only)' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Application updated' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Application not found' }),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    (0, common_1.Put)(":id"),
+    (0, swagger_1.ApiOperation)({ summary: "Update application (DRAFT only)" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Application updated" }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: "Application not found" }),
+    __param(0, (0, common_1.Param)("id", common_1.ParseUUIDPipe)),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -71,11 +125,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "update", null);
 __decorate([
-    (0, common_1.Post)(':id/consent'),
-    (0, swagger_1.ApiOperation)({ summary: 'Record consent for application' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: 'Consent recorded' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Application or consent type not found' }),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    (0, common_1.Post)(":id/consent"),
+    (0, swagger_1.ApiOperation)({ summary: "Record consent for application" }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: "Consent recorded" }),
+    (0, swagger_1.ApiResponse)({
+        status: 404,
+        description: "Application or consent type not found",
+    }),
+    __param(0, (0, common_1.Param)("id", common_1.ParseUUIDPipe)),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -83,39 +140,39 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "consent", null);
 __decorate([
-    (0, common_1.Post)(':id/submit'),
-    (0, swagger_1.ApiOperation)({ summary: 'Submit application' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Application submitted' }),
-    (0, swagger_1.ApiResponse)({ status: 400, description: 'Not DRAFT or consent missing' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Application not found' }),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    (0, common_1.Post)(":id/submit"),
+    (0, swagger_1.ApiOperation)({ summary: "Submit application" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Application submitted" }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: "Not DRAFT or consent missing" }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: "Application not found" }),
+    __param(0, (0, common_1.Param)("id", common_1.ParseUUIDPipe)),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "submit", null);
 __decorate([
-    (0, common_1.Get)('consent-types'),
-    (0, swagger_1.ApiOperation)({ summary: 'List available consent types' }),
+    (0, common_1.Get)("consent-types"),
+    (0, swagger_1.ApiOperation)({ summary: "List available consent types" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'List of active consent types',
+        description: "List of active consent types",
         schema: {
             example: {
-                status: 'SUCCESS',
+                status: "SUCCESS",
                 data: [
                     {
-                        id: 'uuid',
-                        consent_code: 'BUREAU_PULL',
-                        description: 'Consent for credit bureau pull (CRIF, Experian, CIBIL)',
+                        id: "uuid",
+                        consent_code: "BUREAU_PULL",
+                        description: "Consent for credit bureau pull (CRIF, Experian, CIBIL)",
                     },
                     {
-                        id: 'uuid',
-                        consent_code: 'ACCOUNT_AGGREGATOR',
-                        description: 'Consent for fetching banking data via Account Aggregator ecosystem',
+                        id: "uuid",
+                        consent_code: "ACCOUNT_AGGREGATOR",
+                        description: "Consent for fetching banking data via Account Aggregator ecosystem",
                     },
                 ],
-                correlation_id: 'uuid',
+                correlation_id: "uuid",
             },
         },
     }),
@@ -124,33 +181,33 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "getConsentTypes", null);
 __decorate([
-    (0, common_1.Get)(':id/duplicates'),
-    (0, swagger_1.ApiOperation)({ summary: 'Run duplicate detection for application' }),
+    (0, common_1.Get)(":id/duplicates"),
+    (0, swagger_1.ApiOperation)({ summary: "Run duplicate detection for application" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Duplicate detection executed',
+        description: "Duplicate detection executed",
         schema: {
             example: {
-                status: 'SUCCESS',
+                status: "SUCCESS",
                 data: {
                     duplicate_flag: true,
-                    matched_application_ids: ['uuid-1', 'uuid-2'],
+                    matched_application_ids: ["uuid-1", "uuid-2"],
                 },
-                correlation_id: '',
+                correlation_id: "",
             },
         },
     }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Application not found' }),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    (0, swagger_1.ApiResponse)({ status: 404, description: "Application not found" }),
+    __param(0, (0, common_1.Param)("id", common_1.ParseUUIDPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "duplicates", null);
 exports.ApplicationController = ApplicationController = __decorate([
-    (0, swagger_1.ApiTags)('application'),
-    (0, common_1.Controller)('applications'),
+    (0, swagger_1.ApiTags)("application"),
+    (0, common_1.Controller)("applications"),
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiBearerAuth)('jwt'),
+    (0, swagger_1.ApiBearerAuth)("jwt"),
     __metadata("design:paramtypes", [application_service_1.ApplicationService])
 ], ApplicationController);
 //# sourceMappingURL=application.controller.js.map

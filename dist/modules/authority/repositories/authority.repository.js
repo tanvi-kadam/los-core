@@ -29,7 +29,7 @@ let AuthorityRepository = class AuthorityRepository {
         await this.repo.update(id, entity);
         const updated = await this.repo.findOne({ where: { id } });
         if (!updated)
-            throw new Error('Authority matrix not found after update');
+            throw new Error("Authority matrix not found after update");
         return updated;
     }
     async findById(id) {
@@ -40,9 +40,13 @@ let AuthorityRepository = class AuthorityRepository {
         return this.repo.find({
             where: [
                 { roleId, effectiveFrom: (0, typeorm_2.LessThanOrEqual)(now), effectiveTo: (0, typeorm_2.IsNull)() },
-                { roleId, effectiveFrom: (0, typeorm_2.LessThanOrEqual)(now), effectiveTo: (0, typeorm_2.MoreThanOrEqual)(now) },
+                {
+                    roleId,
+                    effectiveFrom: (0, typeorm_2.LessThanOrEqual)(now),
+                    effectiveTo: (0, typeorm_2.MoreThanOrEqual)(now),
+                },
             ],
-            order: { maxLoanAmount: 'DESC' },
+            order: { maxLoanAmount: "DESC" },
         });
     }
 };

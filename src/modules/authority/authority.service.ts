@@ -1,12 +1,16 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PinoLogger } from 'nestjs-pino';
-import { RedisService } from '../../infrastructure/redis';
-import { AuthorityRepository } from './repositories/authority.repository';
-import { AuthorityMatrix } from './entities/authority-matrix.entity';
-import { CreateAuthorityDto } from './dto/create-authority.dto';
-import { UpdateAuthorityDto } from './dto/update-authority.dto';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
+import { RedisService } from "../../infrastructure/redis";
+import { AuthorityRepository } from "./repositories/authority.repository";
+import { AuthorityMatrix } from "./entities/authority-matrix.entity";
+import { CreateAuthorityDto } from "./dto/create-authority.dto";
+import { UpdateAuthorityDto } from "./dto/update-authority.dto";
 
-const AUTHORITY_CACHE_PREFIX = 'AUTHORITY:';
+const AUTHORITY_CACHE_PREFIX = "AUTHORITY:";
 const AUTHORITY_CACHE_TTL_SECONDS = 600; // 10 minutes
 
 export interface AuthorityRuleDto {
@@ -30,11 +34,16 @@ export class AuthorityService {
     this.logger.setContext(AuthorityService.name);
   }
 
-  async createAuthorityRule(dto: CreateAuthorityDto): Promise<AuthorityRuleDto> {
+  async createAuthorityRule(
+    dto: CreateAuthorityDto,
+  ): Promise<AuthorityRuleDto> {
     const entity = await this.authorityRepository.create({
       roleId: dto.role_id,
       maxLoanAmount: String(dto.max_loan_amount),
-      maxDeviationPercent: dto.max_deviation_percent != null ? String(dto.max_deviation_percent) : null,
+      maxDeviationPercent:
+        dto.max_deviation_percent != null
+          ? String(dto.max_deviation_percent)
+          : null,
       allowedProducts: dto.allowed_products ?? null,
       allowedGeographies: dto.allowed_geographies ?? null,
       effectiveFrom: new Date(dto.effective_from),
@@ -44,27 +53,45 @@ export class AuthorityService {
     return this.toDto(entity);
   }
 
-  async updateAuthorityRule(id: string, dto: UpdateAuthorityDto): Promise<AuthorityRuleDto> {
+  async updateAuthorityRule(
+    id: string,
+    dto: UpdateAuthorityDto,
+  ): Promise<AuthorityRuleDto> {
     const existing = await this.authorityRepository.findById(id);
-    if (!existing) throw new NotFoundException('Authority matrix not found');
+    if (!existing) throw new NotFoundException("Authority matrix not found");
     const entity = await this.authorityRepository.update(id, {
       ...(dto.role_id != null && { roleId: dto.role_id }),
-      ...(dto.max_loan_amount != null && { maxLoanAmount: String(dto.max_loan_amount) }),
-      ...(dto.max_deviation_percent != null && { maxDeviationPercent: String(dto.max_deviation_percent) }),
-      ...(dto.allowed_products !== undefined && { allowedProducts: dto.allowed_products }),
-      ...(dto.allowed_geographies !== undefined && { allowedGeographies: dto.allowed_geographies }),
-      ...(dto.effective_from != null && { effectiveFrom: new Date(dto.effective_from) }),
-      ...(dto.effective_to !== undefined && { effectiveTo: dto.effective_to ? new Date(dto.effective_to) : null }),
+      ...(dto.max_loan_amount != null && {
+        maxLoanAmount: String(dto.max_loan_amount),
+      }),
+      ...(dto.max_deviation_percent != null && {
+        maxDeviationPercent: String(dto.max_deviation_percent),
+      }),
+      ...(dto.allowed_products !== undefined && {
+        allowedProducts: dto.allowed_products,
+      }),
+      ...(dto.allowed_geographies !== undefined && {
+        allowedGeographies: dto.allowed_geographies,
+      }),
+      ...(dto.effective_from != null && {
+        effectiveFrom: new Date(dto.effective_from),
+      }),
+      ...(dto.effective_to !== undefined && {
+        effectiveTo: dto.effective_to ? new Date(dto.effective_to) : null,
+      }),
     });
     await this.invalidateAuthorityCache(existing.roleId);
-    if (entity.roleId !== existing.roleId) await this.invalidateAuthorityCache(entity.roleId);
+    if (entity.roleId !== existing.roleId)
+      await this.invalidateAuthorityCache(entity.roleId);
     return this.toDto(entity);
   }
 
   async getAuthorityForRole(roleId: string): Promise<AuthorityRuleDto[]> {
     const cached = await this.getAuthorityCache(roleId);
-    if (cached) return cached;
+    console.log("Cached-", cached);
+    if (cached && cached.length > 0) return cached;
     const list = await this.authorityRepository.findActiveByRoleId(roleId);
+    console.log("List-", list);
     const dtos = list.map((e) => this.toDto(e));
     await this.setAuthorityCache(roleId, dtos);
     return dtos;
@@ -81,21 +108,35 @@ export class AuthorityService {
     checkerId?: string,
   ): Promise<void> {
     if (makerId && checkerId && makerId === checkerId) {
-      this.logger.warn({ makerId, checkerId }, 'maker_id must not equal checker_id');
-      throw new ForbiddenException('Maker and checker must be different');
+      this.logger.warn(
+        { makerId, checkerId },
+        "maker_id must not equal checker_id",
+      );
+      throw new ForbiddenException("Maker and checker must be different");
     }
     const rules = await this.getAuthorityForRole(roleId);
+    console.log("Rulessssssssssss-", rules);
     if (rules.length === 0) {
-      throw new ForbiddenException('No authority rule found for role');
+      throw new ForbiddenException("No authority rule found for role");
     }
-    const maxAmount = rules.reduce((max, r) => Math.max(max, parseFloat(r.max_loan_amount)), 0);
+    const maxAmount = rules.reduce(
+      (max, r) => Math.max(max, parseFloat(r.max_loan_amount)),
+      0,
+    );
     if (loanAmount > maxAmount) {
-      this.logger.warn({ roleId, loanAmount, maxAmount }, 'authority limit exceeded');
-      throw new ForbiddenException(`Loan amount exceeds authority limit (max: ${maxAmount})`);
+      this.logger.warn(
+        { roleId, loanAmount, maxAmount },
+        "authority limit exceeded",
+      );
+      throw new ForbiddenException(
+        `Loan amount exceeds authority limit (max: ${maxAmount})`,
+      );
     }
   }
 
-  private async getAuthorityCache(roleId: string): Promise<AuthorityRuleDto[] | null> {
+  private async getAuthorityCache(
+    roleId: string,
+  ): Promise<AuthorityRuleDto[] | null> {
     const raw = await this.redis.get(`${AUTHORITY_CACHE_PREFIX}${roleId}`);
     if (!raw) return null;
     try {
@@ -105,7 +146,10 @@ export class AuthorityService {
     }
   }
 
-  private async setAuthorityCache(roleId: string, rules: AuthorityRuleDto[]): Promise<void> {
+  private async setAuthorityCache(
+    roleId: string,
+    rules: AuthorityRuleDto[],
+  ): Promise<void> {
     await this.redis.setWithTTL(
       `${AUTHORITY_CACHE_PREFIX}${roleId}`,
       JSON.stringify(rules),

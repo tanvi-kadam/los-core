@@ -31,6 +31,10 @@ __decorate([
     __metadata("design:type", Boolean)
 ], ConsentType.prototype, "isActive", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'version', type: 'integer', default: 1 }),
+    __metadata("design:type", Number)
+], ConsentType.prototype, "version", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], ConsentType.prototype, "createdAt", void 0);

@@ -1,15 +1,15 @@
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { PinoLogger } from 'nestjs-pino';
-import { UserRepository } from './repositories/user.repository';
-import { UserRoleRepository } from './repositories/user-role.repository';
-import { RedisService } from '../../infrastructure/redis';
-import { LoginDto } from './dto/login.dto';
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { PinoLogger } from "nestjs-pino";
+import { UserRepository } from "./repositories/user.repository";
+import { UserRoleRepository } from "./repositories/user-role.repository";
+import { RedisService } from "../../infrastructure/redis";
+import { LoginDto } from "./dto/login.dto";
 export interface JwtPayload {
     sub: string;
     email: string;
     role_id: string;
-    type: 'access' | 'refresh';
+    type: "access" | "refresh";
 }
 export interface AuthTokens {
     access_token: string;

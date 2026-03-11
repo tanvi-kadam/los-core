@@ -1,8 +1,9 @@
-import { WorkflowRepository } from './repositories/workflow.repository';
-import { ApplicationRepository } from '../application/repositories/application.repository';
-import { AuditService } from '../audit/audit.service';
-import { KafkaProducerService } from '../../infrastructure/kafka';
-import { TransitionDto } from './dto/transition.dto';
+import { WorkflowRepository } from "./repositories/workflow.repository";
+import { ApplicationRepository } from "../application/repositories/application.repository";
+import { AuditService } from "../audit/audit.service";
+import { KafkaProducerService } from "../../infrastructure/kafka";
+import { TransitionDto } from "./dto/transition.dto";
+import { ApplicationStateTransitionDto } from "./dto/application-transitions.dto";
 export declare class WorkflowService {
     private readonly workflowRepository;
     private readonly applicationRepository;
@@ -14,4 +15,5 @@ export declare class WorkflowService {
         from_state: string;
         to_state: string;
     }>;
+    getTransitionsForApplication(applicationId: string): Promise<ApplicationStateTransitionDto[]>;
 }

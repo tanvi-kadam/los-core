@@ -44,4 +44,23 @@ export class ApplicationRepository {
     }
     return qb.getMany();
   }
+
+  async findPaged(options: {
+    state?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ items: Application[]; total: number }> {
+    const qb = this.repo.createQueryBuilder('a');
+
+    if (options.state) {
+      qb.where('a.current_state = :state', { state: options.state });
+    }
+
+    qb.orderBy('a.created_at', 'DESC');
+
+    qb.skip((options.page - 1) * options.limit).take(options.limit);
+
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total };
+  }
 }

@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThanOrEqual, IsNull } from 'typeorm';
-import { AuthorityMatrix } from '../entities/authority-matrix.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, LessThanOrEqual, MoreThanOrEqual, IsNull } from "typeorm";
+import { AuthorityMatrix } from "../entities/authority-matrix.entity";
 
 @Injectable()
 export class AuthorityRepository {
@@ -15,10 +15,13 @@ export class AuthorityRepository {
     return this.repo.save(created);
   }
 
-  async update(id: string, entity: Partial<AuthorityMatrix>): Promise<AuthorityMatrix> {
+  async update(
+    id: string,
+    entity: Partial<AuthorityMatrix>,
+  ): Promise<AuthorityMatrix> {
     await this.repo.update(id, entity as Record<string, unknown>);
     const updated = await this.repo.findOne({ where: { id } });
-    if (!updated) throw new Error('Authority matrix not found after update');
+    if (!updated) throw new Error("Authority matrix not found after update");
     return updated;
   }
 
@@ -31,9 +34,13 @@ export class AuthorityRepository {
     return this.repo.find({
       where: [
         { roleId, effectiveFrom: LessThanOrEqual(now), effectiveTo: IsNull() },
-        { roleId, effectiveFrom: LessThanOrEqual(now), effectiveTo: MoreThanOrEqual(now) },
+        {
+          roleId,
+          effectiveFrom: LessThanOrEqual(now),
+          effectiveTo: MoreThanOrEqual(now),
+        },
       ],
-      order: { maxLoanAmount: 'DESC' },
+      order: { maxLoanAmount: "DESC" },
     });
   }
 }

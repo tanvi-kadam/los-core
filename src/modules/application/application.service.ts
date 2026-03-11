@@ -6,6 +6,7 @@ import {
   Inject,
   forwardRef,
 } from "@nestjs/common";
+import { DataSource } from "typeorm";
 import { ApplicationRepository } from "./repositories/application.repository";
 import { ConsentRecordRepository } from "./repositories/consent-record.repository";
 import { ConsentTypeRepository } from "./repositories/consent-type.repository";
@@ -19,6 +20,11 @@ import { CreateApplicationDto } from "./dto/create-application.dto";
 import { UpdateApplicationDto } from "./dto/update-application.dto";
 import { ConsentDto } from "./dto/consent.dto";
 import { Application } from "./entities/application.entity";
+import {
+  ApplicationListItemDto,
+  ListApplicationsQueryDto,
+} from "./dto/list-applications.dto";
+import { ApplicationStateTransition } from "../workflow/entities/application-state-transition.entity";
 
 @Injectable()
 export class ApplicationService {
@@ -32,10 +38,16 @@ export class ApplicationService {
     @Inject(forwardRef(() => WorkflowService))
     private readonly workflowService: WorkflowService,
     private readonly authorityService: AuthorityService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private consentTypesCache: {
-    items: { id: string; consent_code: string; description: string }[];
+    items: {
+      id: string;
+      consent_code: string;
+      description: string;
+      version: number;
+    }[];
     loadedAt: number;
   } | null = null;
   private static readonly CONSENT_TYPES_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -91,7 +103,7 @@ export class ApplicationService {
   }
 
   async getConsentTypes(): Promise<
-    { id: string; consent_code: string; description: string }[]
+    { id: string; consent_code: string; description: string; version: number }[]
   > {
     const now = Date.now();
     if (
@@ -107,10 +119,45 @@ export class ApplicationService {
       id: ct.id,
       consent_code: ct.consentCode,
       description: ct.description,
+      version: ct.version,
     }));
 
     this.consentTypesCache = { items, loadedAt: now };
     return items;
+  }
+
+  async listApplications(query: ListApplicationsQueryDto): Promise<{
+    items: ApplicationListItemDto[];
+    page: number;
+    limit: number;
+    total: number;
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const { items, total } = await this.applicationRepository.findPaged({
+      state: query.state,
+      page,
+      limit,
+    });
+
+    const mapped: ApplicationListItemDto[] = items.map((a) => ({
+      id: a.id,
+      entity_type: a.entityType,
+      entity_identifier: a.entityIdentifier,
+      pan: a.pan,
+      product_code: a.productCode,
+      loan_amount: a.loanAmount,
+      loan_tenure_months: a.loanTenureMonths,
+      purpose: a.purpose,
+      current_state: a.currentState,
+      consent_status: a.consentStatus,
+      duplicate_flag: a.duplicateFlag,
+      created_by: a.createdBy,
+      created_at: a.createdAt,
+    }));
+
+    return { items: mapped, page, limit, total };
   }
 
   async create(
@@ -135,7 +182,7 @@ export class ApplicationService {
       loanTenureMonths: dto.loanTenureMonths,
       purpose: dto.purpose ?? null,
       currentState: "DRAFT",
-      consentStatus: "PENDING",
+      consentStatus: "GIVEN",
       duplicateFlag,
       createdBy: userId,
     });
@@ -236,6 +283,7 @@ export class ApplicationService {
   async submit(
     applicationId: string,
     userId: string,
+    roleId: string | undefined,
     correlationId?: string,
   ): Promise<{ application_id: string; current_state: string }> {
     const app = await this.applicationRepository.findById(applicationId);
@@ -249,32 +297,65 @@ export class ApplicationService {
 
     const duplicateChecks =
       await this.duplicateCheckRepository.findByApplicationId(applicationId);
-    if (!duplicateChecks || duplicateChecks.length === 0) {
+
+    if (
+      duplicateChecks &&
+      duplicateChecks.length > 0 &&
+      duplicateChecks.some((dc) => dc.matchedApplicationId)
+    ) {
       throw new ConflictException(
-        "Duplicate detection must be executed before submission",
+        "Duplicate application detected. Submission is blocked.",
       );
     }
 
     // Authority validation: ensure caller's role can approve this loan amount
-    await this.authorityService.checkAuthorityLimit(
-      "" as unknown as string,
-      Number(app.loanAmount),
-      userId,
-      undefined,
-    );
+    if (roleId) {
+      await this.authorityService.checkAuthorityLimit(
+        roleId,
+        Number(app.loanAmount),
+        userId,
+        undefined,
+      );
+    }
 
-    const transitionResult = await this.workflowService.transition(
-      applicationId,
-      { target_state: "SUBMITTED" },
-      userId,
-      "",
-      null,
-      correlationId,
-    );
+    const fromState = app.currentState;
+    const toState = "SUBMITTED";
+
+    await this.dataSource.transaction(async (manager) => {
+      const appRepo = manager.getRepository(Application);
+      const transitionRepo = manager.getRepository(ApplicationStateTransition);
+
+      await appRepo.save({
+        ...app,
+        currentState: toState,
+      });
+
+      await transitionRepo.save({
+        applicationId,
+        fromState,
+        toState,
+        triggeredBy: userId,
+        triggeredRole: roleId ?? "",
+        authoritySnapshot: null,
+        occurredAt: new Date(),
+        correlationId: correlationId ?? null,
+      });
+    });
+
+    await this.auditService.record({
+      actorId: userId,
+      actorRole: roleId ?? "",
+      actionType: "STATE_CHANGE",
+      objectType: "APPLICATION",
+      objectId: applicationId,
+      beforeStateHash: fromState,
+      afterStateHash: toState,
+      correlationId: correlationId ?? null,
+    });
 
     return {
-      application_id: transitionResult.application_id,
-      current_state: "SUBMITTED",
+      application_id: applicationId,
+      current_state: toState,
     };
   }
 

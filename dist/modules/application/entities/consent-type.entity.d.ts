@@ -3,5 +3,6 @@ export declare class ConsentType {
     consentCode: string;
     description: string;
     isActive: boolean;
+    version: number;
     createdAt: Date;
 }

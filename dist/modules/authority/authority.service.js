@@ -15,7 +15,7 @@ const common_1 = require("@nestjs/common");
 const nestjs_pino_1 = require("nestjs-pino");
 const redis_1 = require("../../infrastructure/redis");
 const authority_repository_1 = require("./repositories/authority.repository");
-const AUTHORITY_CACHE_PREFIX = 'AUTHORITY:';
+const AUTHORITY_CACHE_PREFIX = "AUTHORITY:";
 const AUTHORITY_CACHE_TTL_SECONDS = 600;
 let AuthorityService = AuthorityService_1 = class AuthorityService {
     constructor(authorityRepository, redis, logger) {
@@ -28,7 +28,9 @@ let AuthorityService = AuthorityService_1 = class AuthorityService {
         const entity = await this.authorityRepository.create({
             roleId: dto.role_id,
             maxLoanAmount: String(dto.max_loan_amount),
-            maxDeviationPercent: dto.max_deviation_percent != null ? String(dto.max_deviation_percent) : null,
+            maxDeviationPercent: dto.max_deviation_percent != null
+                ? String(dto.max_deviation_percent)
+                : null,
             allowedProducts: dto.allowed_products ?? null,
             allowedGeographies: dto.allowed_geographies ?? null,
             effectiveFrom: new Date(dto.effective_from),
@@ -40,15 +42,27 @@ let AuthorityService = AuthorityService_1 = class AuthorityService {
     async updateAuthorityRule(id, dto) {
         const existing = await this.authorityRepository.findById(id);
         if (!existing)
-            throw new common_1.NotFoundException('Authority matrix not found');
+            throw new common_1.NotFoundException("Authority matrix not found");
         const entity = await this.authorityRepository.update(id, {
             ...(dto.role_id != null && { roleId: dto.role_id }),
-            ...(dto.max_loan_amount != null && { maxLoanAmount: String(dto.max_loan_amount) }),
-            ...(dto.max_deviation_percent != null && { maxDeviationPercent: String(dto.max_deviation_percent) }),
-            ...(dto.allowed_products !== undefined && { allowedProducts: dto.allowed_products }),
-            ...(dto.allowed_geographies !== undefined && { allowedGeographies: dto.allowed_geographies }),
-            ...(dto.effective_from != null && { effectiveFrom: new Date(dto.effective_from) }),
-            ...(dto.effective_to !== undefined && { effectiveTo: dto.effective_to ? new Date(dto.effective_to) : null }),
+            ...(dto.max_loan_amount != null && {
+                maxLoanAmount: String(dto.max_loan_amount),
+            }),
+            ...(dto.max_deviation_percent != null && {
+                maxDeviationPercent: String(dto.max_deviation_percent),
+            }),
+            ...(dto.allowed_products !== undefined && {
+                allowedProducts: dto.allowed_products,
+            }),
+            ...(dto.allowed_geographies !== undefined && {
+                allowedGeographies: dto.allowed_geographies,
+            }),
+            ...(dto.effective_from != null && {
+                effectiveFrom: new Date(dto.effective_from),
+            }),
+            ...(dto.effective_to !== undefined && {
+                effectiveTo: dto.effective_to ? new Date(dto.effective_to) : null,
+            }),
         });
         await this.invalidateAuthorityCache(existing.roleId);
         if (entity.roleId !== existing.roleId)
@@ -57,25 +71,28 @@ let AuthorityService = AuthorityService_1 = class AuthorityService {
     }
     async getAuthorityForRole(roleId) {
         const cached = await this.getAuthorityCache(roleId);
-        if (cached)
+        console.log("Cached-", cached);
+        if (cached && cached.length > 0)
             return cached;
         const list = await this.authorityRepository.findActiveByRoleId(roleId);
+        console.log("List-", list);
         const dtos = list.map((e) => this.toDto(e));
         await this.setAuthorityCache(roleId, dtos);
         return dtos;
     }
     async checkAuthorityLimit(roleId, loanAmount, makerId, checkerId) {
         if (makerId && checkerId && makerId === checkerId) {
-            this.logger.warn({ makerId, checkerId }, 'maker_id must not equal checker_id');
-            throw new common_1.ForbiddenException('Maker and checker must be different');
+            this.logger.warn({ makerId, checkerId }, "maker_id must not equal checker_id");
+            throw new common_1.ForbiddenException("Maker and checker must be different");
         }
         const rules = await this.getAuthorityForRole(roleId);
+        console.log("Rulessssssssssss-", rules);
         if (rules.length === 0) {
-            throw new common_1.ForbiddenException('No authority rule found for role');
+            throw new common_1.ForbiddenException("No authority rule found for role");
         }
         const maxAmount = rules.reduce((max, r) => Math.max(max, parseFloat(r.max_loan_amount)), 0);
         if (loanAmount > maxAmount) {
-            this.logger.warn({ roleId, loanAmount, maxAmount }, 'authority limit exceeded');
+            this.logger.warn({ roleId, loanAmount, maxAmount }, "authority limit exceeded");
             throw new common_1.ForbiddenException(`Loan amount exceeds authority limit (max: ${maxAmount})`);
         }
     }

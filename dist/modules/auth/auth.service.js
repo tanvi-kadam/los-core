@@ -19,7 +19,7 @@ const nestjs_pino_1 = require("nestjs-pino");
 const user_repository_1 = require("./repositories/user.repository");
 const user_role_repository_1 = require("./repositories/user-role.repository");
 const redis_1 = require("../../infrastructure/redis");
-const AUTH_CACHE_PREFIX = 'AUTH:';
+const AUTH_CACHE_PREFIX = "AUTH:";
 const AUTH_CACHE_TTL_SECONDS = 300;
 let AuthService = AuthService_1 = class AuthService {
     constructor(userRepository, userRoleRepository, jwtService, config, redis, logger) {
@@ -34,26 +34,35 @@ let AuthService = AuthService_1 = class AuthService {
     async login(dto, correlationId) {
         const user = await this.userRepository.findByEmail(dto.email);
         if (!user) {
-            this.logger.warn({ email: dto.email, correlation_id: correlationId }, 'login failure: user not found');
-            throw new common_1.UnauthorizedException('Invalid email or password');
+            this.logger.warn({ email: dto.email, correlation_id: correlationId }, "login failure: user not found");
+            throw new common_1.UnauthorizedException("Invalid email or password");
         }
         const valid = await bcrypt.compare(dto.password, user.passwordHash);
         if (!valid) {
-            this.logger.warn({ email: dto.email, user_id: user.id, correlation_id: correlationId }, 'login failure: invalid password');
-            throw new common_1.UnauthorizedException('Invalid email or password');
+            this.logger.warn({ email: dto.email, user_id: user.id, correlation_id: correlationId }, "login failure: invalid password");
+            throw new common_1.UnauthorizedException("Invalid email or password");
         }
         const primaryRole = await this.userRoleRepository.findPrimaryRoleByUserId(user.id);
-        const roleId = primaryRole?.role?.id ?? '';
+        const roleId = primaryRole?.role?.id ?? "";
         const payload = {
             sub: user.id,
             email: user.email,
             role_id: roleId,
         };
-        const accessToken = this.jwtService.sign({ ...payload, type: 'access' }, { expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') });
-        const refreshToken = this.jwtService.sign({ ...payload, type: 'refresh' }, { expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d') });
-        const expiresIn = this.parseExpiryToSeconds(this.config.get('JWT_ACCESS_EXPIRY', '15m'));
-        this.logger.info({ user_id: user.id, email: user.email, role_id: roleId, correlation_id: correlationId }, 'login success');
-        await this.setAuthCache(user.id, { user_id: user.id, email: user.email, role_id: roleId });
+        const accessToken = this.jwtService.sign({ ...payload, type: "access" }, { expiresIn: "1d" });
+        const refreshToken = this.jwtService.sign({ ...payload, type: "refresh" }, { expiresIn: this.config.get("JWT_REFRESH_EXPIRY", "7d") });
+        const expiresIn = this.parseExpiryToSeconds(this.config.get("JWT_ACCESS_EXPIRY", "1d"));
+        this.logger.info({
+            user_id: user.id,
+            email: user.email,
+            role_id: roleId,
+            correlation_id: correlationId,
+        }, "login success");
+        await this.setAuthCache(user.id, {
+            user_id: user.id,
+            email: user.email,
+            role_id: roleId,
+        });
         return {
             access_token: accessToken,
             refresh_token: refreshToken,
@@ -66,15 +75,15 @@ let AuthService = AuthService_1 = class AuthService {
             payload = this.jwtService.verify(refreshToken);
         }
         catch {
-            this.logger.warn({ correlation_id: correlationId }, 'token generation failed: invalid refresh token');
-            throw new common_1.UnauthorizedException('Invalid or expired refresh token');
+            this.logger.warn({ correlation_id: correlationId }, "token generation failed: invalid refresh token");
+            throw new common_1.UnauthorizedException("Invalid or expired refresh token");
         }
-        if (payload.type !== 'refresh') {
-            throw new common_1.UnauthorizedException('Invalid refresh token');
+        if (payload.type !== "refresh") {
+            throw new common_1.UnauthorizedException("Invalid refresh token");
         }
         const user = await this.userRepository.findById(payload.sub);
         if (!user) {
-            throw new common_1.UnauthorizedException('User no longer exists');
+            throw new common_1.UnauthorizedException("User no longer exists");
         }
         const primaryRole = await this.userRoleRepository.findPrimaryRoleByUserId(user.id);
         const roleId = primaryRole?.role?.id ?? payload.role_id;
@@ -83,14 +92,18 @@ let AuthService = AuthService_1 = class AuthService {
             email: user.email,
             role_id: roleId,
         };
-        const accessToken = this.jwtService.sign({ ...newPayload, type: 'access' }, { expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') });
-        const newRefreshToken = this.jwtService.sign({ ...newPayload, type: 'refresh' }, { expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d') });
-        this.logger.info({ user_id: user.id, correlation_id: correlationId }, 'token generation');
-        await this.setAuthCache(user.id, { user_id: user.id, email: user.email, role_id: roleId });
+        const accessToken = this.jwtService.sign({ ...newPayload, type: "access" }, { expiresIn: this.config.get("JWT_ACCESS_EXPIRY", "15m") });
+        const newRefreshToken = this.jwtService.sign({ ...newPayload, type: "refresh" }, { expiresIn: this.config.get("JWT_REFRESH_EXPIRY", "7d") });
+        this.logger.info({ user_id: user.id, correlation_id: correlationId }, "token generation");
+        await this.setAuthCache(user.id, {
+            user_id: user.id,
+            email: user.email,
+            role_id: roleId,
+        });
         return {
             access_token: accessToken,
             refresh_token: newRefreshToken,
-            expires_in: this.parseExpiryToSeconds(this.config.get('JWT_ACCESS_EXPIRY', '15m')),
+            expires_in: this.parseExpiryToSeconds(this.config.get("JWT_ACCESS_EXPIRY", "15m")),
         };
     }
     async getMe(userId) {
@@ -99,15 +112,19 @@ let AuthService = AuthService_1 = class AuthService {
             return cached;
         const user = await this.userRepository.findByIdWithRoles(userId);
         if (!user)
-            throw new common_1.UnauthorizedException('User not found');
+            throw new common_1.UnauthorizedException("User not found");
         const primaryRole = await this.userRoleRepository.findPrimaryRoleByUserId(user.id);
-        const roleId = primaryRole?.role?.id ?? '';
-        const dto = { user_id: user.id, email: user.email, role_id: roleId };
+        const roleId = primaryRole?.role?.id ?? "";
+        const dto = {
+            user_id: user.id,
+            email: user.email,
+            role_id: roleId,
+        };
         await this.setAuthCache(user.id, dto);
         return dto;
     }
     async validatePayload(payload) {
-        if (payload.type !== 'access')
+        if (payload.type !== "access")
             return null;
         const cached = await this.getAuthCache(payload.sub);
         if (cached)
@@ -140,11 +157,16 @@ let AuthService = AuthService_1 = class AuthService {
         const [, num, unit] = match;
         const n = parseInt(num, 10);
         switch (unit) {
-            case 's': return n;
-            case 'm': return n * 60;
-            case 'h': return n * 3600;
-            case 'd': return n * 86400;
-            default: return 900;
+            case "s":
+                return n;
+            case "m":
+                return n * 60;
+            case "h":
+                return n * 3600;
+            case "d":
+                return n * 86400;
+            default:
+                return 900;
         }
     }
 };

@@ -14,6 +14,9 @@ export class ConsentType {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ name: 'version', type: 'integer', default: 1 })
+  version: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }
