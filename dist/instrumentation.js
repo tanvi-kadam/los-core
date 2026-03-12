@@ -7,8 +7,7 @@ const instrumentation_http_1 = require("@opentelemetry/instrumentation-http");
 const instrumentation_pg_1 = require("@opentelemetry/instrumentation-pg");
 const instrumentation_ioredis_1 = require("@opentelemetry/instrumentation-ioredis");
 const instrumentation_kafkajs_1 = require("@opentelemetry/instrumentation-kafkajs");
-const endpoint = process.env["OTEL_EXPORTER_OTLP_ENDPOINT"] ??
-    "http://los-otel-collector:4317";
+const endpoint = process.env["OTEL_EXPORTER_OTLP_ENDPOINT"] ?? "http://152.67.7.3:4317";
 const serviceName = process.env["OTEL_SERVICE_NAME"] ?? "los-core";
 const traceExporter = new exporter_trace_otlp_grpc_1.OTLPTraceExporter({
     url: endpoint,

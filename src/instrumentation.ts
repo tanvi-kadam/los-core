@@ -12,8 +12,7 @@ import { IORedisInstrumentation } from "@opentelemetry/instrumentation-ioredis";
 import { KafkaJsInstrumentation } from "@opentelemetry/instrumentation-kafkajs";
 
 const endpoint =
-  process.env["OTEL_EXPORTER_OTLP_ENDPOINT"] ??
-  "http://los-otel-collector:4317";
+  process.env["OTEL_EXPORTER_OTLP_ENDPOINT"] ?? "http://152.67.7.3:4317";
 const serviceName = process.env["OTEL_SERVICE_NAME"] ?? "los-core";
 
 const traceExporter = new OTLPTraceExporter({

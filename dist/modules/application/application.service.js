@@ -25,6 +25,9 @@ const authority_service_1 = require("../authority/authority.service");
 const audit_service_1 = require("../audit/audit.service");
 const kafka_1 = require("../../infrastructure/kafka");
 const application_entity_1 = require("./entities/application.entity");
+const consent_record_entity_1 = require("./entities/consent-record.entity");
+const consent_type_entity_1 = require("./entities/consent-type.entity");
+const duplicate_check_entity_1 = require("./entities/duplicate-check.entity");
 const application_state_transition_entity_1 = require("../workflow/entities/application-state-transition.entity");
 let ApplicationService = ApplicationService_1 = class ApplicationService {
     constructor(applicationRepository, consentRecordRepository, consentTypeRepository, duplicateCheckRepository, auditService, kafkaProducer, workflowService, authorityService, dataSource) {
@@ -39,16 +42,44 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
         this.dataSource = dataSource;
         this.consentTypesCache = null;
     }
-    async recordConsent(app, dto, userId, correlationId, context) {
+    async recordConsent(app, dto, userId, correlationId, context, manager) {
+        if (manager) {
+            const consentType = await manager.getRepository(consent_type_entity_1.ConsentType).findOne({
+                where: { consentCode: dto.consentCode, isActive: true },
+            });
+            if (!consentType) {
+                throw new common_1.BadRequestException("Invalid consent code");
+            }
+            await manager.getRepository(consent_record_entity_1.ConsentRecord).save({
+                applicationId: app.id,
+                consentTypeId: consentType.id,
+                consentTextVersion: dto.consentTextVersion,
+                ipAddress: context?.ip ?? null,
+                userAgent: context?.userAgent ?? null,
+                correlationId: correlationId ?? null,
+            });
+            const records = await manager.getRepository(consent_record_entity_1.ConsentRecord).find({
+                where: { applicationId: app.id },
+            });
+            const consentStatus = records.length > 0 ? "CONSENTED" : "PENDING";
+            await manager.getRepository(application_entity_1.Application).save({
+                ...app,
+                consentStatus,
+            });
+            await this.auditService.record({
+                actorId: userId,
+                actorRole: "",
+                actionType: "CONSENT",
+                objectType: "APPLICATION",
+                objectId: app.id,
+                correlationId: correlationId ?? null,
+            }, manager);
+            return;
+        }
         const consentType = await this.consentTypeRepository.findActiveByCode(dto.consentCode);
         if (!consentType) {
             throw new common_1.BadRequestException("Invalid consent code");
         }
-        console.log("consentType", consentType);
-        console.log("dto", dto);
-        console.log("userId", userId);
-        console.log("correlationId", correlationId);
-        console.log("context", context);
         await this.consentRecordRepository.save({
             applicationId: app.id,
             consentTypeId: consentType.id,
@@ -58,7 +89,7 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
             correlationId: correlationId ?? null,
         });
         const records = await this.consentRecordRepository.findByApplication(app.id);
-        const consentStatus = records.length > 0 ? "CONSENTED" : "PENDING";
+        const consentStatus = records.length > 0 ? "GIVEN" : "PENDING";
         await this.applicationRepository.save({
             ...app,
             consentStatus,
@@ -117,40 +148,48 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
     async create(dto, userId, correlationId, context) {
         const duplicate = await this.applicationRepository.findDuplicateByPanAndProduct(dto.pan, dto.productCode);
         const duplicateFlag = !!duplicate;
-        const app = await this.applicationRepository.save({
-            entityType: dto.entityType,
-            entityIdentifier: dto.entityIdentifier,
-            pan: dto.pan,
-            productCode: dto.productCode,
-            loanAmount: String(dto.loanAmount),
-            loanTenureMonths: dto.loanTenureMonths,
-            purpose: dto.purpose ?? null,
-            currentState: "DRAFT",
-            consentStatus: "GIVEN",
-            duplicateFlag,
-            createdBy: userId,
-        });
-        if (duplicateFlag && duplicate) {
-            await this.duplicateCheckRepository.save({
-                applicationId: app.id,
-                matchedApplicationId: duplicate.id,
-                matchReason: "PAN_OR_ENTITY_IDENTIFIER",
+        const app = await this.dataSource.transaction(async (manager) => {
+            const applicationRepo = manager.getRepository(application_entity_1.Application);
+            const app = await applicationRepo.save({
+                entityType: dto.entityType,
+                entityIdentifier: dto.entityIdentifier,
+                pan: dto.pan,
+                productCode: dto.productCode,
+                loanAmount: String(dto.loanAmount),
+                loanTenureMonths: dto.loanTenureMonths,
+                purpose: dto.purpose ?? null,
+                currentState: "DRAFT",
+                consentStatus: "PENDING",
+                duplicateFlag,
+                createdBy: userId,
             });
-        }
-        await this.auditService.record({
-            actorId: userId,
-            actorRole: "",
-            actionType: "CREATE",
-            objectType: "APPLICATION",
-            objectId: app.id,
-            afterStateHash: null,
-            correlationId: correlationId ?? null,
-        });
-        if (dto.consents && dto.consents.length > 0) {
-            for (const consent of dto.consents) {
-                await this.recordConsent(app, consent, userId, correlationId, context);
+            if (duplicateFlag && duplicate) {
+                await manager.getRepository(duplicate_check_entity_1.DuplicateCheck).save({
+                    applicationId: app.id,
+                    matchedApplicationId: duplicate.id,
+                    matchReason: "PAN_OR_ENTITY_IDENTIFIER",
+                });
             }
-        }
+            await this.auditService.record({
+                actorId: userId,
+                actorRole: "",
+                actionType: "CREATE",
+                objectType: "APPLICATION",
+                objectId: app.id,
+                afterStateHash: null,
+                correlationId: correlationId ?? null,
+            }, manager);
+            if (dto.consents && dto.consents.length > 0) {
+                for (const consent of dto.consents) {
+                    await this.recordConsent(app, consent, userId, correlationId, context, manager);
+                }
+                await applicationRepo.save({
+                    ...app,
+                    consentStatus: "GIVEN",
+                });
+            }
+            return app;
+        });
         return { application_id: app.id, current_state: app.currentState };
     }
     async update(id, dto, userId, correlationId) {
@@ -199,8 +238,8 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
             throw new common_1.BadRequestException("Application is not in DRAFT state");
         }
         console.log("app.consentStatus", app);
-        if (app.consentStatus !== "CONSENTED") {
-            throw new common_1.BadRequestException("Consent is required before submit");
+        if (app.consentStatus !== "GIVEN") {
+            throw new common_1.BadRequestException("Consent is not given");
         }
         const duplicateChecks = await this.duplicateCheckRepository.findByApplicationId(applicationId);
         if (duplicateChecks &&

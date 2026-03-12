@@ -6,7 +6,7 @@ import {
   Inject,
   forwardRef,
 } from "@nestjs/common";
-import { DataSource } from "typeorm";
+import { DataSource, EntityManager } from "typeorm";
 import { ApplicationRepository } from "./repositories/application.repository";
 import { ConsentRecordRepository } from "./repositories/consent-record.repository";
 import { ConsentTypeRepository } from "./repositories/consent-type.repository";
@@ -20,6 +20,9 @@ import { CreateApplicationDto } from "./dto/create-application.dto";
 import { UpdateApplicationDto } from "./dto/update-application.dto";
 import { ConsentDto } from "./dto/consent.dto";
 import { Application } from "./entities/application.entity";
+import { ConsentRecord } from "./entities/consent-record.entity";
+import { ConsentType } from "./entities/consent-type.entity";
+import { DuplicateCheck } from "./entities/duplicate-check.entity";
 import {
   ApplicationListItemDto,
   ListApplicationsQueryDto,
@@ -58,40 +61,66 @@ export class ApplicationService {
     userId: string,
     correlationId?: string,
     context?: { ip?: string; userAgent?: string },
+    manager?: EntityManager,
   ): Promise<void> {
+    if (manager) {
+      const consentType = await manager.getRepository(ConsentType).findOne({
+        where: { consentCode: dto.consentCode, isActive: true },
+      });
+      if (!consentType) {
+        throw new BadRequestException("Invalid consent code");
+      }
+      await manager.getRepository(ConsentRecord).save({
+        applicationId: app.id,
+        consentTypeId: consentType.id,
+        consentTextVersion: dto.consentTextVersion,
+        ipAddress: context?.ip ?? null,
+        userAgent: context?.userAgent ?? null,
+        correlationId: correlationId ?? null,
+      });
+      const records = await manager.getRepository(ConsentRecord).find({
+        where: { applicationId: app.id },
+      });
+      const consentStatus = records.length > 0 ? "CONSENTED" : "PENDING";
+      await manager.getRepository(Application).save({
+        ...app,
+        consentStatus,
+      });
+      await this.auditService.record(
+        {
+          actorId: userId,
+          actorRole: "",
+          actionType: "CONSENT",
+          objectType: "APPLICATION",
+          objectId: app.id,
+          correlationId: correlationId ?? null,
+        },
+        manager,
+      );
+      return;
+    }
     const consentType = await this.consentTypeRepository.findActiveByCode(
       dto.consentCode,
     );
     if (!consentType) {
       throw new BadRequestException("Invalid consent code");
     }
-
-    console.log("consentType", consentType);
-    console.log("dto", dto);
-    console.log("userId", userId);
-    console.log("correlationId", correlationId);
-    console.log("context", context);
-
     await this.consentRecordRepository.save({
       applicationId: app.id,
       consentTypeId: consentType.id,
-      // consentedAt: new Date(),
       consentTextVersion: dto.consentTextVersion,
       ipAddress: context?.ip ?? null,
       userAgent: context?.userAgent ?? null,
       correlationId: correlationId ?? null,
     });
-
     const records = await this.consentRecordRepository.findByApplication(
       app.id,
     );
-    const consentStatus = records.length > 0 ? "CONSENTED" : "PENDING";
-
+    const consentStatus = records.length > 0 ? "GIVEN" : "PENDING";
     await this.applicationRepository.save({
       ...app,
       consentStatus,
     });
-
     await this.auditService.record({
       actorId: userId,
       actorRole: "",
@@ -173,56 +202,62 @@ export class ApplicationService {
       );
     const duplicateFlag = !!duplicate;
 
-    const app = await this.applicationRepository.save({
-      entityType: dto.entityType,
-      entityIdentifier: dto.entityIdentifier,
-      pan: dto.pan,
-      productCode: dto.productCode,
-      loanAmount: String(dto.loanAmount),
-      loanTenureMonths: dto.loanTenureMonths,
-      purpose: dto.purpose ?? null,
-      currentState: "DRAFT",
-      consentStatus: "GIVEN",
-      duplicateFlag,
-      createdBy: userId,
-    });
-
-    if (duplicateFlag && duplicate) {
-      await this.duplicateCheckRepository.save({
-        applicationId: app.id,
-        matchedApplicationId: duplicate.id,
-        matchReason: "PAN_OR_ENTITY_IDENTIFIER",
+    const app = await this.dataSource.transaction(async (manager) => {
+      const applicationRepo = manager.getRepository(Application);
+      const app = await applicationRepo.save({
+        entityType: dto.entityType,
+        entityIdentifier: dto.entityIdentifier,
+        pan: dto.pan,
+        productCode: dto.productCode,
+        loanAmount: String(dto.loanAmount),
+        loanTenureMonths: dto.loanTenureMonths,
+        purpose: dto.purpose ?? null,
+        currentState: "DRAFT",
+        consentStatus: "PENDING",
+        duplicateFlag,
+        createdBy: userId,
       });
-    }
 
-    await this.auditService.record({
-      actorId: userId,
-      actorRole: "",
-      actionType: "CREATE",
-      objectType: "APPLICATION",
-      objectId: app.id,
-      afterStateHash: null,
-      correlationId: correlationId ?? null,
-    });
-
-    // await this.kafkaProducer.send(KAFKA_TOPICS.APPLICATION_EVENTS, {
-    //   event_type: 'ApplicationCreated',
-    //   correlation_id: correlationId ?? '',
-    //   payload: {
-    //     application_id: app.id,
-    //     entity_type: app.entityType,
-    //     product_code: app.productCode,
-    //     loan_amount: app.loanAmount,
-    //     current_state: app.currentState,
-    //     created_by: userId,
-    //   },
-    // });
-
-    if (dto.consents && dto.consents.length > 0) {
-      for (const consent of dto.consents) {
-        await this.recordConsent(app, consent, userId, correlationId, context);
+      if (duplicateFlag && duplicate) {
+        await manager.getRepository(DuplicateCheck).save({
+          applicationId: app.id,
+          matchedApplicationId: duplicate.id,
+          matchReason: "PAN_OR_ENTITY_IDENTIFIER",
+        });
       }
-    }
+
+      await this.auditService.record(
+        {
+          actorId: userId,
+          actorRole: "",
+          actionType: "CREATE",
+          objectType: "APPLICATION",
+          objectId: app.id,
+          afterStateHash: null,
+          correlationId: correlationId ?? null,
+        },
+        manager,
+      );
+
+      if (dto.consents && dto.consents.length > 0) {
+        for (const consent of dto.consents) {
+          await this.recordConsent(
+            app,
+            consent,
+            userId,
+            correlationId,
+            context,
+            manager,
+          );
+        }
+        await applicationRepo.save({
+          ...app,
+          consentStatus: "GIVEN",
+        });
+      }
+
+      return app;
+    });
 
     return { application_id: app.id, current_state: app.currentState };
   }
@@ -292,8 +327,8 @@ export class ApplicationService {
       throw new BadRequestException("Application is not in DRAFT state");
     }
     console.log("app.consentStatus", app);
-    if (app.consentStatus !== "CONSENTED") {
-      throw new BadRequestException("Consent is required before submit");
+    if (app.consentStatus !== "GIVEN") {
+      throw new BadRequestException("Consent is not given");
     }
 
     const duplicateChecks =
