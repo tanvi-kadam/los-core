@@ -11,7 +11,7 @@ export class AuditService {
    */
   async record(dto: RecordAuditDto): Promise<void> {
     const occurredAt = new Date();
-    await this.repository.save({
+    await this.repository.insert({
       actorId: dto.actorId,
       actorRole: dto.actorRole,
       authoritySnapshot: dto.authoritySnapshot ?? null,

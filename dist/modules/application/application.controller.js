@@ -94,6 +94,11 @@ __decorate([
 __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({ summary: "Create application" }),
+    (0, swagger_1.ApiHeader)({
+        name: "X-Idempotency-Key",
+        required: true,
+        description: "Unique key for this request; retries with same key return the stored response.",
+    }),
     (0, swagger_1.ApiResponse)({
         status: 201,
         description: "Application created",
@@ -115,6 +120,11 @@ __decorate([
 __decorate([
     (0, common_1.Put)(":id"),
     (0, swagger_1.ApiOperation)({ summary: "Update application (DRAFT only)" }),
+    (0, swagger_1.ApiHeader)({
+        name: "X-Idempotency-Key",
+        required: true,
+        description: "Unique key for this request; retries with same key return the stored response.",
+    }),
     (0, swagger_1.ApiResponse)({ status: 200, description: "Application updated" }),
     (0, swagger_1.ApiResponse)({ status: 404, description: "Application not found" }),
     __param(0, (0, common_1.Param)("id", common_1.ParseUUIDPipe)),
@@ -142,6 +152,11 @@ __decorate([
 __decorate([
     (0, common_1.Post)(":id/submit"),
     (0, swagger_1.ApiOperation)({ summary: "Submit application" }),
+    (0, swagger_1.ApiHeader)({
+        name: "X-Idempotency-Key",
+        required: true,
+        description: "Unique key for this request; retries with same key return the stored response.",
+    }),
     (0, swagger_1.ApiResponse)({ status: 200, description: "Application submitted" }),
     (0, swagger_1.ApiResponse)({ status: 400, description: "Not DRAFT or consent missing" }),
     (0, swagger_1.ApiResponse)({ status: 404, description: "Application not found" }),

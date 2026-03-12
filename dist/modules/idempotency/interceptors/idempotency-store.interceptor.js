@@ -8,14 +8,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var IdempotencyStoreInterceptor_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IdempotencyStoreInterceptor = void 0;
 const common_1 = require("@nestjs/common");
 const operators_1 = require("rxjs/operators");
 const idempotency_service_1 = require("../idempotency.service");
-let IdempotencyStoreInterceptor = class IdempotencyStoreInterceptor {
+let IdempotencyStoreInterceptor = IdempotencyStoreInterceptor_1 = class IdempotencyStoreInterceptor {
     constructor(idempotencyService) {
         this.idempotencyService = idempotencyService;
+        this.logger = new common_1.Logger(IdempotencyStoreInterceptor_1.name);
     }
     intercept(context, next) {
         const request = context.switchToHttp().getRequest();
@@ -28,13 +30,15 @@ let IdempotencyStoreInterceptor = class IdempotencyStoreInterceptor {
             try {
                 await this.idempotencyService.store(key, request.idempotencyEndpoint, request.idempotencyUserId ?? null, request.idempotencyRequestHash, responseBody);
             }
-            catch {
+            catch (err) {
+                this.logger.error('Idempotency store failed', err instanceof Error ? err.stack : String(err));
+                throw err;
             }
         }));
     }
 };
 exports.IdempotencyStoreInterceptor = IdempotencyStoreInterceptor;
-exports.IdempotencyStoreInterceptor = IdempotencyStoreInterceptor = __decorate([
+exports.IdempotencyStoreInterceptor = IdempotencyStoreInterceptor = IdempotencyStoreInterceptor_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [idempotency_service_1.IdempotencyService])
 ], IdempotencyStoreInterceptor);

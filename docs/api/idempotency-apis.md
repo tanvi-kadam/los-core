@@ -1,11 +1,12 @@
 # Idempotency (Middleware)
 
-Idempotency is enforced via middleware and the `X-Idempotency-Key` header. There are no dedicated idempotency endpoints; the behavior applies to the following routes when the header is present.
+Idempotency is enforced via middleware and the `X-Idempotency-Key` header. For the write routes listed below, the header is **required**; requests without it are rejected with **400 Bad Request**.
 
-**Applied routes**
+**Routes that require idempotency**
 
 - `POST /applications`
 - `PUT /applications/:id`
+- `POST /applications/:id/submit`
 - `POST /applications/:id/transition`
 - `POST /approvals`
 - `POST /approvals/:id/decision`
@@ -14,15 +15,31 @@ Idempotency is enforced via middleware and the `X-Idempotency-Key` header. There
 
 | Header             | Required | Description                                      |
 |--------------------|----------|--------------------------------------------------|
-| X-Idempotency-Key  | No       | When present, duplicate requests return stored response or 409 |
+| X-Idempotency-Key  | Yes      | Required for the routes above. Duplicate requests (same key + same body) return stored response; same key + different body returns 409. |
+
+**Scope**
+
+Idempotency is scoped by **(key, endpoint)**. The same key can be used for different endpoints (e.g. one key for create, another for submit). Lookup and replay use both the key and the request endpoint (method + path).
 
 **Logic**
 
-1. If `X-Idempotency-Key` is missing, the request is processed normally.
-2. If the key exists: compute a hash of the request body and look up the key.
-3. If the key exists with the **same** request hash → return the stored response (200, same body as original).
-4. If the key exists with a **different** request hash → return **409 Conflict**.
-5. If the key does not exist → process the request and store the response for future replays.
+1. If `X-Idempotency-Key` is **missing** on a route that requires it → **400 Bad Request**.
+2. If the key is present: compute a hash of the request body and look up by **(key, endpoint)**.
+3. If a record exists with the **same** request hash → return the stored response (200, same body as original).
+4. If a record exists with a **different** request hash → return **409 Conflict**.
+5. If no record exists → process the request and store the response for future replays.
+
+**Response (400 — missing header)**
+
+When the request is to a write route and `X-Idempotency-Key` is missing:
+
+```json
+{
+  "status": "ERROR",
+  "message": "X-Idempotency-Key is required for this request",
+  "correlation_id": "uuid"
+}
+```
 
 **Response (replay, 200)**
 

@@ -27,6 +27,12 @@ let IdempotencyRepository = class IdempotencyRepository {
             order: { createdAt: 'DESC' },
         });
     }
+    async findByKeyAndEndpoint(key, endpoint) {
+        return this.repo.findOne({
+            where: { idempotencyKey: key, endpoint },
+            order: { createdAt: 'DESC' },
+        });
+    }
     async save(entity) {
         const created = this.repo.create(entity);
         return this.repo.save(created);

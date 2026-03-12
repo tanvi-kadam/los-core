@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Param, UseGuards, ParseUUIDPipe, Req, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { Request } from 'express';
 import { WorkflowService } from './workflow.service';
 import { TransitionDto } from './dto/transition.dto';
@@ -14,6 +14,11 @@ export class WorkflowController {
 
   @Post(':id/transition')
   @ApiOperation({ summary: 'Transition application state' })
+  @ApiHeader({
+    name: 'X-Idempotency-Key',
+    required: true,
+    description: 'Unique key for this request; retries with same key return the stored response.',
+  })
   @ApiResponse({ status: 200, description: 'State transition recorded' })
   @ApiResponse({ status: 400, description: 'Invalid transition' })
   @ApiResponse({ status: 404, description: 'Application not found' })

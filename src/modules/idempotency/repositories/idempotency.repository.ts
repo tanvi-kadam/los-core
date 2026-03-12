@@ -17,6 +17,16 @@ export class IdempotencyRepository {
     });
   }
 
+  async findByKeyAndEndpoint(
+    key: string,
+    endpoint: string,
+  ): Promise<IdempotencyKey | null> {
+    return this.repo.findOne({
+      where: { idempotencyKey: key, endpoint },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async save(entity: Partial<IdempotencyKey>): Promise<IdempotencyKey> {
     const created = this.repo.create(entity);
     return this.repo.save(created);

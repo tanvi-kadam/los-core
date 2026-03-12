@@ -15,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { Request } from "express";
 import { ApplicationService } from "./application.service";
@@ -71,6 +72,11 @@ export class ApplicationController {
 
   @Post()
   @ApiOperation({ summary: "Create application" })
+  @ApiHeader({
+    name: "X-Idempotency-Key",
+    required: true,
+    description: "Unique key for this request; retries with same key return the stored response.",
+  })
   @ApiResponse({
     status: 201,
     description: "Application created",
@@ -100,6 +106,11 @@ export class ApplicationController {
 
   @Put(":id")
   @ApiOperation({ summary: "Update application (DRAFT only)" })
+  @ApiHeader({
+    name: "X-Idempotency-Key",
+    required: true,
+    description: "Unique key for this request; retries with same key return the stored response.",
+  })
   @ApiResponse({ status: 200, description: "Application updated" })
   @ApiResponse({ status: 404, description: "Application not found" })
   async update(
@@ -137,6 +148,11 @@ export class ApplicationController {
 
   @Post(":id/submit")
   @ApiOperation({ summary: "Submit application" })
+  @ApiHeader({
+    name: "X-Idempotency-Key",
+    required: true,
+    description: "Unique key for this request; retries with same key return the stored response.",
+  })
   @ApiResponse({ status: 200, description: "Application submitted" })
   @ApiResponse({ status: 400, description: "Not DRAFT or consent missing" })
   @ApiResponse({ status: 404, description: "Application not found" })

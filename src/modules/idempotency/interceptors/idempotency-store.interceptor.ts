@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  Logger,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -15,6 +16,8 @@ import { IdempotencyService } from '../idempotency.service';
  */
 @Injectable()
 export class IdempotencyStoreInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(IdempotencyStoreInterceptor.name);
+
   constructor(private readonly idempotencyService: IdempotencyService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -33,8 +36,12 @@ export class IdempotencyStoreInterceptor implements NestInterceptor {
             request.idempotencyRequestHash!,
             responseBody as Record<string, unknown>,
           );
-        } catch {
-          // Log but do not fail the response
+        } catch (err) {
+          this.logger.error(
+            'Idempotency store failed',
+            err instanceof Error ? err.stack : String(err),
+          );
+          throw err;
         }
       }),
     );
