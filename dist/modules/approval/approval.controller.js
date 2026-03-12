@@ -34,6 +34,11 @@ exports.ApprovalController = ApprovalController;
 __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({ summary: 'Create approval request (maker)' }),
+    (0, swagger_1.ApiHeader)({
+        name: 'X-Idempotency-Key',
+        required: true,
+        description: 'Unique key for this request; retries with same key return the stored response.',
+    }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Approval request created' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Validation error' }),
     __param(0, (0, common_1.Body)()),
@@ -45,6 +50,11 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/decision'),
     (0, swagger_1.ApiOperation)({ summary: 'Record approval decision (checker)' }),
+    (0, swagger_1.ApiHeader)({
+        name: 'X-Idempotency-Key',
+        required: true,
+        description: 'Unique key for this request; retries with same key return the stored response.',
+    }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Decision recorded' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Maker-checker violation or not PENDING' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Approval request not found' }),

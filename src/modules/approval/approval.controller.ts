@@ -7,7 +7,7 @@ import {
   ParseUUIDPipe,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { Request } from 'express';
 import { ApprovalService } from './approval.service';
 import { CreateApprovalDto } from './dto/create-approval.dto';
@@ -23,6 +23,11 @@ export class ApprovalController {
 
   @Post()
   @ApiOperation({ summary: 'Create approval request (maker)' })
+  @ApiHeader({
+    name: 'X-Idempotency-Key',
+    required: true,
+    description: 'Unique key for this request; retries with same key return the stored response.',
+  })
   @ApiResponse({ status: 201, description: 'Approval request created' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   async create(
@@ -38,6 +43,11 @@ export class ApprovalController {
 
   @Post(':id/decision')
   @ApiOperation({ summary: 'Record approval decision (checker)' })
+  @ApiHeader({
+    name: 'X-Idempotency-Key',
+    required: true,
+    description: 'Unique key for this request; retries with same key return the stored response.',
+  })
   @ApiResponse({ status: 200, description: 'Decision recorded' })
   @ApiResponse({ status: 400, description: 'Maker-checker violation or not PENDING' })
   @ApiResponse({ status: 404, description: 'Approval request not found' })

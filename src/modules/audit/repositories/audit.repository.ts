@@ -10,8 +10,10 @@ export class AuditRepository {
     private readonly repo: Repository<AuditLog>,
   ) {}
 
-  async save(entity: Partial<AuditLog>): Promise<AuditLog> {
-    const created = this.repo.create(entity);
-    return this.repo.save(created);
+  /**
+   * Append-only: inserts a new audit log row. No update or delete.
+   */
+  async insert(entity: Partial<AuditLog>): Promise<void> {
+    await this.repo.insert(entity as Parameters<Repository<AuditLog>['insert']>[0]);
   }
 }

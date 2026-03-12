@@ -21,9 +21,8 @@ let AuditRepository = class AuditRepository {
     constructor(repo) {
         this.repo = repo;
     }
-    async save(entity) {
-        const created = this.repo.create(entity);
-        return this.repo.save(created);
+    async insert(entity) {
+        await this.repo.insert(entity);
     }
 };
 exports.AuditRepository = AuditRepository;

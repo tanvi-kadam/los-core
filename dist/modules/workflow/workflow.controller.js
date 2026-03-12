@@ -36,6 +36,11 @@ exports.WorkflowController = WorkflowController;
 __decorate([
     (0, common_1.Post)(':id/transition'),
     (0, swagger_1.ApiOperation)({ summary: 'Transition application state' }),
+    (0, swagger_1.ApiHeader)({
+        name: 'X-Idempotency-Key',
+        required: true,
+        description: 'Unique key for this request; retries with same key return the stored response.',
+    }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'State transition recorded' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid transition' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Application not found' }),

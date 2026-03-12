@@ -14,14 +14,40 @@ const common_1 = require("@nestjs/common");
 const crypto_1 = require("crypto");
 const idempotency_service_1 = require("./idempotency.service");
 const IDEMPOTENCY_HEADER = 'x-idempotency-key';
+function requiresIdempotency(method, path) {
+    const p = path.replace(/\/$/, '') || '/';
+    if (method === 'POST' && (p === '/applications' || p === '/applications/'))
+        return true;
+    if (method === 'PUT' && /^\/applications\/[^/]+$/.test(p))
+        return true;
+    if (method === 'POST' && /^\/applications\/[^/]+\/submit$/.test(p))
+        return true;
+    if (method === 'POST' && /^\/applications\/[^/]+\/transition$/.test(p))
+        return true;
+    if (method === 'POST' && (p === '/approvals' || p === '/approvals/'))
+        return true;
+    if (method === 'POST' && /^\/approvals\/[^/]+\/decision$/.test(p))
+        return true;
+    return false;
+}
 let IdempotencyMiddleware = class IdempotencyMiddleware {
     constructor(idempotencyService) {
         this.idempotencyService = idempotencyService;
     }
     async use(req, res, next) {
+        const path = (req.baseUrl || req.path || '').replace(/\/$/, '') || '/';
         const key = req.headers[IDEMPOTENCY_HEADER]?.trim();
-        if (!key)
+        if (!key) {
+            if (requiresIdempotency(req.method, path)) {
+                res.status(400).json({
+                    status: 'ERROR',
+                    message: 'X-Idempotency-Key is required for this request',
+                    correlation_id: req.correlationId ?? '',
+                });
+                return;
+            }
             return next();
+        }
         const endpoint = req.method + ' ' + (req.baseUrl || req.path);
         const userId = req.user?.user_id ?? null;
         const body = req.body ?? {};

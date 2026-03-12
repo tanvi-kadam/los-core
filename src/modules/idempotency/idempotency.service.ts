@@ -18,7 +18,7 @@ export class IdempotencyService {
     requestHash: string,
     userId: string | null,
   ): Promise<Record<string, unknown> | null> {
-    const record = await this.repository.findByKey(key);
+    const record = await this.repository.findByKeyAndEndpoint(key, endpoint);
     if (!record) return null;
     if (record.requestHash !== requestHash) {
       throw new ConflictException(

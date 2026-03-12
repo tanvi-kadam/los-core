@@ -18,7 +18,7 @@ let IdempotencyService = class IdempotencyService {
         this.repository = repository;
     }
     async check(key, endpoint, requestHash, userId) {
-        const record = await this.repository.findByKey(key);
+        const record = await this.repository.findByKeyAndEndpoint(key, endpoint);
         if (!record)
             return null;
         if (record.requestHash !== requestHash) {
