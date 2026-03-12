@@ -14,4 +14,11 @@ export class LoginDto {
   @IsString()
   @MinLength(1, { message: "Password must not be empty" })
   password: string;
+
+  @ApiProperty({
+    example: "los-core",
+    description: "JWT issuer (iss) required by API gateway",
+  })
+  @IsString()
+  iss: string;
 }

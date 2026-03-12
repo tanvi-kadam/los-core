@@ -30,4 +30,12 @@ __decorate([
     (0, class_validator_1.MinLength)(1, { message: "Password must not be empty" }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: "los-core",
+        description: "JWT issuer (iss) required by API gateway",
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], LoginDto.prototype, "iss", void 0);
 //# sourceMappingURL=login.dto.js.map

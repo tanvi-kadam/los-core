@@ -48,6 +48,7 @@ let AuthService = AuthService_1 = class AuthService {
             sub: user.id,
             email: user.email,
             role_id: roleId,
+            iss: dto.iss,
         };
         const accessToken = this.jwtService.sign({ ...payload, type: "access" }, { expiresIn: "1d" });
         const refreshToken = this.jwtService.sign({ ...payload, type: "refresh" }, { expiresIn: this.config.get("JWT_REFRESH_EXPIRY", "7d") });
@@ -91,6 +92,7 @@ let AuthService = AuthService_1 = class AuthService {
             sub: user.id,
             email: user.email,
             role_id: roleId,
+            iss: payload.iss,
         };
         const accessToken = this.jwtService.sign({ ...newPayload, type: "access" }, { expiresIn: this.config.get("JWT_ACCESS_EXPIRY", "15m") });
         const newRefreshToken = this.jwtService.sign({ ...newPayload, type: "refresh" }, { expiresIn: this.config.get("JWT_REFRESH_EXPIRY", "7d") });
