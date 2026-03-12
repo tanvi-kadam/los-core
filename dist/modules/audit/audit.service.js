@@ -16,9 +16,9 @@ let AuditService = class AuditService {
     constructor(repository) {
         this.repository = repository;
     }
-    async record(dto) {
+    async record(dto, manager) {
         const occurredAt = new Date();
-        await this.repository.insert({
+        const payload = {
             actorId: dto.actorId,
             actorRole: dto.actorRole,
             authoritySnapshot: dto.authoritySnapshot ?? null,
@@ -29,7 +29,13 @@ let AuditService = class AuditService {
             afterStateHash: dto.afterStateHash ?? null,
             occurredAt,
             correlationId: dto.correlationId ?? null,
-        });
+        };
+        if (manager) {
+            await this.repository.insertWithManager(payload, manager);
+        }
+        else {
+            await this.repository.insert(payload);
+        }
     }
 };
 exports.AuditService = AuditService;

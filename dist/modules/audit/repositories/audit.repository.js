@@ -24,6 +24,11 @@ let AuditRepository = class AuditRepository {
     async insert(entity) {
         await this.repo.insert(entity);
     }
+    async insertWithManager(entity, manager) {
+        await manager
+            .getRepository(audit_log_entity_1.AuditLog)
+            .insert(entity);
+    }
 };
 exports.AuditRepository = AuditRepository;
 exports.AuditRepository = AuditRepository = __decorate([

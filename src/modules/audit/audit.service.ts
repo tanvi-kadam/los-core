@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
 import { AuditRepository } from './repositories/audit.repository';
 import { RecordAuditDto } from './dto/record-audit.dto';
 
@@ -8,10 +9,11 @@ export class AuditService {
 
   /**
    * Record an audit event. Call this from every module for significant actions.
+   * Pass manager to run inside a transaction.
    */
-  async record(dto: RecordAuditDto): Promise<void> {
+  async record(dto: RecordAuditDto, manager?: EntityManager): Promise<void> {
     const occurredAt = new Date();
-    await this.repository.insert({
+    const payload = {
       actorId: dto.actorId,
       actorRole: dto.actorRole,
       authoritySnapshot: dto.authoritySnapshot ?? null,
@@ -22,6 +24,11 @@ export class AuditService {
       afterStateHash: dto.afterStateHash ?? null,
       occurredAt,
       correlationId: dto.correlationId ?? null,
-    });
+    };
+    if (manager) {
+      await this.repository.insertWithManager(payload, manager);
+    } else {
+      await this.repository.insert(payload);
+    }
   }
 }
