@@ -48,7 +48,7 @@ async function bootstrap() {
         .addApiKey({ type: "apiKey", name: "X-Idempotency-Key", in: "header" }, "X-Idempotency-Key")
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
-    swagger_1.SwaggerModule.setup("api/docs", app, document);
+    swagger_1.SwaggerModule.setup("docs", app, document);
     await app.listen(port);
 }
 bootstrap();
