@@ -2,16 +2,17 @@
 alwaysApply: true
 ---
 
-You are building a production-grade backend for a fintech MSME Loan Origination System (LOS).
+You are building a **production-grade backend for a fintech MSME Loan Origination System (LOS)**.
 
 Follow these architecture rules strictly.
 
 ---
 
-## SYSTEM ARCHITECTURE
+# SYSTEM ARCHITECTURE
 
-Framework: NestJS
-Architecture: Modular Monolith
+Framework: **NestJS**
+
+Architecture: **Modular Monolith**
 
 Project structure:
 
@@ -20,18 +21,106 @@ modules/
 infrastructure/
 common/
 
+The system runs behind **Kong API Gateway**.
+
+Directus is used as a **governance and identity service**.
+
 ---
 
-## DATABASE
+# AUTHENTICATION ARCHITECTURE
 
-Database: PostgreSQL
-ORM: TypeORM
+Authentication is handled by **Directus**.
+
+Directus responsibilities:
+
+- User authentication
+- User roles
+- Identity management
+- JWT token generation
+
+Directus generates JWT tokens with the following configuration:
+
+```
+SECRET=<directus_secret>
+JWT_ISSUER=los-core-api
+```
+
+Example JWT payload:
+
+```
+{
+"id": "user_id",
+"role": "role_id",
+"iss": "los-core-api",
+"exp": 1710003600
+}
+```
+
+Authentication flow:
+
+Frontend
+↓
+Kong API Gateway
+↓
+NestJS `/auth/login`
+↓
+Directus `/auth/login`
+↓
+Directus verifies credentials
+↓
+Directus returns JWT
+↓
+NestJS returns the same token to client
+
+NestJS **must NOT generate or reissue JWT tokens**.
+
+NestJS only **verifies Directus tokens**.
+
+---
+
+# AUTHORIZATION
+
+Authorization is managed through **Directus governance collections**.
+
+Directus collections:
+
+directus_users
+directus_roles
+authorization_matrix
+policy_rules
+
+NestJS fetches authorization rules from Directus.
+
+Authorization flow:
+
+Client request
+↓
+Kong Gateway
+↓
+NestJS JWT Guard verifies token
+↓
+Extract role from JWT
+↓
+Fetch authorization rules from Directus
+↓
+Allow or deny operation
+
+Client-provided roles must never be trusted.
+
+Roles must always come from the verified JWT.
+
+---
+
+# DATABASE
+
+Database: **PostgreSQL**
+
+ORM: **TypeORM**
 
 Use a single PostgreSQL connection with multiple schemas.
 
 Schemas:
 
-auth_schema
 authority_schema
 application_schema
 workflow_schema
@@ -42,14 +131,21 @@ idempotency_schema
 policy_schema
 integration_schema
 aml_schema
+document_schema
 
 Example entity definition:
 
+```
 @Entity({ schema: 'application_schema', name: 'applications' })
+```
+
+Authentication data is **NOT stored in LOS database**.
+
+Users and roles are managed by **Directus**.
 
 ---
 
-## DOMAIN MODULES
+# DOMAIN MODULES
 
 Each business domain must be implemented as a module.
 
@@ -68,6 +164,44 @@ integration
 aml
 document
 
+Module responsibilities:
+
+auth
+Handles Directus authentication integration.
+
+authority
+Handles authorization logic using Directus authorization_matrix.
+
+application
+Loan application lifecycle.
+
+workflow
+Temporal workflow orchestration.
+
+approval
+Credit approval process.
+
+audit
+Audit logs and compliance tracking.
+
+config
+System configuration.
+
+idempotency
+Idempotent request handling.
+
+policy
+Policy rule evaluation.
+
+integration
+External integrations.
+
+aml
+AML checks.
+
+document
+Document storage metadata.
+
 Each module must contain:
 
 controller
@@ -76,16 +210,80 @@ repository
 entity
 dto
 
-Controllers must be thin.
+Controllers must remain thin.
+
 Business logic must exist in services.
 
 ---
 
-## INFRASTRUCTURE MODULES
+# DIRECTUS INTEGRATION
+
+Directus must be accessed through a dedicated integration module.
+
+Location:
+
+```
+src/modules/directus
+```
+
+Responsibilities:
+
+- Authenticate users via Directus
+- Fetch authorization_matrix
+- Fetch policy_rules
+- Fetch roles if required
+
+Directus API must be called using **axios**.
+
+Directus base URL:
+
+```
+http://directus:8055
+```
+
+Directus must never be exposed publicly.
+
+Only NestJS can access Directus.
+
+---
+
+# JWT VERIFICATION
+
+NestJS must verify Directus JWT tokens.
+
+Verification rules:
+
+- Signature must match Directus SECRET
+- Token must not be expired
+- Issuer must match configured issuer
+
+Example guard behavior:
+
+```
+jwt.verify(token, process.env.DIRECTUS_JWT_SECRET)
+
+if(decoded.iss !== process.env.JWT_ISSUER)
+  throw UnauthorizedException
+```
+
+Decoded user must be attached to request:
+
+```
+req.user = {
+id: decoded.id,
+role: decoded.role
+}
+```
+
+---
+
+# INFRASTRUCTURE MODULES
 
 Infrastructure modules must exist under:
 
+```
 src/infrastructure
+```
 
 Modules:
 
@@ -97,13 +295,15 @@ minio
 logger
 telemetry
 
-Domain modules must never directly access external systems.
+Domain modules must **never directly access external systems**.
+
+All infrastructure access must go through infrastructure modules.
 
 ---
 
-## LOGGING
+# LOGGING
 
-Logging must use Pino.
+Logging must use **Pino**.
 
 Required log fields:
 
@@ -113,17 +313,19 @@ service
 correlation_id
 message
 
-Logs must be JSON compatible for Loki ingestion.
+Logs must be **JSON compatible** for Loki ingestion.
 
 ---
 
-## TRACING
+# TRACING
 
-Tracing must use OpenTelemetry.
+Tracing must use **OpenTelemetry**.
 
 Traces must export to:
 
+```
 otel-collector:4317
+```
 
 Trace:
 
@@ -134,44 +336,56 @@ Kafka publishing
 
 ---
 
-## HEADERS
+# HEADERS
 
 All APIs must support:
 
+```
 X-Correlation-ID
 X-Idempotency-Key
+```
+
+Correlation IDs must propagate across services.
 
 ---
 
-## STANDARD API RESPONSE
+# STANDARD API RESPONSE
 
 Success:
 
+```
 {
 "status": "SUCCESS",
 "data": {},
 "correlation_id": ""
 }
+```
 
 Error:
 
+```
 {
 "status": "ERROR",
 "message": "",
 "correlation_id": ""
 }
+```
 
 ---
 
-## SWAGGER DOCUMENTATION
+# SWAGGER DOCUMENTATION
 
 Swagger must be implemented using:
 
+```
 @nestjs/swagger
+```
 
 Swagger endpoint:
 
+```
 /api/docs
+```
 
 Each API must include:
 
@@ -181,16 +395,16 @@ Each API must include:
 
 ---
 
-## DTO VALIDATION
+# DTO VALIDATION
 
-DTOs must use:
+DTO validation must use:
 
 class-validator
 class-transformer
 
 ---
 
-## API INVENTORY
+# API INVENTORY
 
 After modules are generated produce an API inventory.
 
@@ -204,7 +418,7 @@ database table
 
 ---
 
-## API VERIFICATION
+# API VERIFICATION
 
 Verify that:
 

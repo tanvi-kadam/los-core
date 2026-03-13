@@ -1,0 +1,39 @@
+# Server
+PORT=3000
+NODE_ENV=development
+
+# JWT (Auth)
+JWT_SECRET=change-me-in-production
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+
+# Database (TypeORM / PostgreSQL)
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=los_admin
+DB_PASSWORD=vlcMTwKDEftqjRUSgNOuwrBoEpZdm2KuIjz35sNu
+DB_NAME=los_db
+
+# Redis (ioredis)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Kafka (kafkajs)
+KAFKA_BROKERS=kafka:9092
+# Optional: consumer group id; if set, consumer starts and processes registered topics
+# KAFKA_CONSUMER_GROUP_ID=los-core-consumer
+
+# MinIO (S3-compatible, AWS SDK)
+MINIO_ENDPOINT=http://minio:9000
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
+MINIO_BUCKET=los
+
+# Temporal
+TEMPORAL_ADDRESS=temporal:7233
+TEMPORAL_NAMESPACE=default
+
+# OpenTelemetry (tracing: HTTP, PostgreSQL, Redis, Kafka)
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+# OTEL_SERVICE_NAME=los-core
