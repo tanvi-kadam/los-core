@@ -79,7 +79,7 @@ describe('AuthService', () => {
             userRepository.findByEmail.mockResolvedValue(mockUser);
             bcrypt.compare.mockResolvedValue(true);
             userRoleRepository.findPrimaryRoleByUserId.mockResolvedValue(mockUserRole);
-            const result = await service.login({ email: 'user@los.com', password: 'password' });
+            const result = await service.login({ email: 'user@los.com', password: 'password', iss: 'los-core' });
             expect(result.access_token).toBe('mock-token');
             expect(result.refresh_token).toBe('mock-token');
             expect(result.expires_in).toBeDefined();
@@ -88,13 +88,13 @@ describe('AuthService', () => {
         });
         it('should throw UnauthorizedException on login failure - user not found', async () => {
             userRepository.findByEmail.mockResolvedValue(null);
-            await expect(service.login({ email: 'unknown@los.com', password: 'password' })).rejects.toThrow(common_1.UnauthorizedException);
+            await expect(service.login({ email: 'unknown@los.com', password: 'password', iss: 'los-core' })).rejects.toThrow(common_1.UnauthorizedException);
             expect(userRepository.findByEmail).toHaveBeenCalledWith('unknown@los.com');
         });
         it('should throw UnauthorizedException on login failure - invalid password', async () => {
             userRepository.findByEmail.mockResolvedValue(mockUser);
             bcrypt.compare.mockResolvedValue(false);
-            await expect(service.login({ email: 'user@los.com', password: 'wrong' })).rejects.toThrow(common_1.UnauthorizedException);
+            await expect(service.login({ email: 'user@los.com', password: 'wrong', iss: 'los-core' })).rejects.toThrow(common_1.UnauthorizedException);
         });
     });
     describe('getMe', () => {

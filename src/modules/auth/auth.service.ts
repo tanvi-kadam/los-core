@@ -15,6 +15,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role_id: string;
+  iss: string;
   type: "access" | "refresh";
 }
 
@@ -68,6 +69,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role_id: roleId,
+      iss: dto.iss,
     };
     const accessToken = this.jwtService.sign(
       { ...payload, type: "access" },
@@ -130,6 +132,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role_id: roleId,
+      iss: payload.iss,
     };
     const accessToken = this.jwtService.sign(
       { ...newPayload, type: "access" },

@@ -85,7 +85,7 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       userRoleRepository.findPrimaryRoleByUserId.mockResolvedValue(mockUserRole as any);
 
-      const result = await service.login({ email: 'user@los.com', password: 'password' });
+      const result = await service.login({ email: 'user@los.com', password: 'password', iss: 'los-core' } as any);
 
       expect(result.access_token).toBe('mock-token');
       expect(result.refresh_token).toBe('mock-token');
@@ -98,7 +98,7 @@ describe('AuthService', () => {
       userRepository.findByEmail.mockResolvedValue(null);
 
       await expect(
-        service.login({ email: 'unknown@los.com', password: 'password' }),
+        service.login({ email: 'unknown@los.com', password: 'password', iss: 'los-core' } as any),
       ).rejects.toThrow(UnauthorizedException);
 
       expect(userRepository.findByEmail).toHaveBeenCalledWith('unknown@los.com');
@@ -109,7 +109,7 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        service.login({ email: 'user@los.com', password: 'wrong' }),
+        service.login({ email: 'user@los.com', password: 'wrong', iss: 'los-core' } as any),
       ).rejects.toThrow(UnauthorizedException);
     });
   });

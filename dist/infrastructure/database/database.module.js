@@ -20,17 +20,24 @@ exports.DatabaseModule = DatabaseModule = __decorate([
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
-                useFactory: (config) => ({
-                    type: "postgres",
-                    host: config.get("DB_HOST", "152.67.7.3"),
-                    port: config.get("DB_PORT", 5432),
-                    username: config.get("DB_USER", "los_admin"),
-                    password: config.get("DB_PASSWORD", "vlcMTwKDEftqjRUSgNOuwrBoEpZdm2KuIjz35sNu"),
-                    database: config.get("DB_NAME", "los_db"),
-                    autoLoadEntities: true,
-                    synchronize: config.get("NODE_ENV") === "development",
-                    logging: config.get("NODE_ENV") !== "production",
-                }),
+                useFactory: (config) => {
+                    const dbConfig = {
+                        type: "postgres",
+                        host: config.get("DB_HOST", "152.67.7.3"),
+                        port: config.get("DB_PORT", 5432),
+                        username: config.get("DB_USER", "los_admin"),
+                        password: config.get("DB_PASSWORD", "vlcMTwKDEftqjRUSgNOuwrBoEpZdm2KuIjz35sNu"),
+                        database: config.get("DB_NAME", "los_db"),
+                        autoLoadEntities: true,
+                        synchronize: config.get("NODE_ENV") === "development",
+                        logging: config.get("NODE_ENV") !== "production",
+                    };
+                    console.log("TypeORM Config:", {
+                        ...dbConfig,
+                        password: "*****",
+                    });
+                    return dbConfig;
+                },
             }),
         ],
         providers: [database_service_1.DatabaseService],

@@ -8,7 +8,7 @@ JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
 # Database (TypeORM / PostgreSQL)
-DB_HOST=152.67.7.3
+DB_HOST=postgres
 DB_PORT=5432
 DB_USER=los_admin
 DB_PASSWORD=vlcMTwKDEftqjRUSgNOuwrBoEpZdm2KuIjz35sNu
